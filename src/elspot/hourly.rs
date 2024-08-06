@@ -19,13 +19,13 @@ use serde_json::{self, Map, Value};
 use reqwest;
 
 pub fn from_json(json_str: &str) -> Result<Hourly> {
-    let hourly = Hourly::new(&json_str)?;
+    let hourly = Hourly::new(json_str)?;
 
     Ok(hourly)
 }
 
 pub fn from_file(path: &str) -> Result<Hourly> {
-    let json_str = fs::read_to_string(&path).unwrap();
+    let json_str = fs::read_to_string(path).unwrap();
 
     from_json(&json_str)
 }
@@ -152,10 +152,7 @@ impl Hourly {
             .iter()
             .find(|v| v.Name == region);
 
-        match res {
-            Some(_) => true,
-            None => false,
-        }
+        res.is_some()
     }
 
     pub fn price_for_region_at_utc_dt(&self, region: &str, utc_dt: &DateTime<Utc>) -> Result<Price> {
@@ -179,7 +176,7 @@ impl Hourly {
             0 => return Err(Error::HourlyPriceHourMismatch),
             1 => {
                 // 99.9% of the time, this block will match because we only have one entry for a specific time.
-                row_entry = &row_entries[0];
+                row_entry = row_entries[0];
             },
             2 => {
                 // This happens on rare occasions.
@@ -189,8 +186,8 @@ impl Hourly {
                 // To disambiguate we add 1 hour to the datetime and see if this moves us to 3 o'clock.
                 // If 2 then we are still on CEST, if 3 we are on CET.
                 match (region_dt + Duration::hours(1)).hour() {
-                    3 => row_entry = &row_entries[1],
-                    2 => row_entry = &row_entries[0],
+                    3 => row_entry = row_entries[1],
+                    2 => row_entry = row_entries[0],
                     _ => return Err(Error::HourlyPriceHourMismatchCESTToCET),
                 }
             },

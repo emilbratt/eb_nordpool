@@ -28,7 +28,7 @@ pub fn utc_dt_for_nok_25_hour() -> DateTime<Utc> {
     // lots of code here, but this is just for highlighting the ambiguity of the time whem going from CEST to CET.
 
     let mut oslo_dt:DateTime<Tz> = Europe::Oslo.with_ymd_and_hms(2022, 10, 30, 1, 0, 0).unwrap();
-    oslo_dt = oslo_dt + Duration::hours(2); // Moves time from CEST to CET (summer to winter..).
+    oslo_dt += Duration::hours(2); // Moves time from CEST to CET (summer to winter..).
 
     let dt = "2022-10-30 01:00:00";
     let fmt = "%Y-%m-%d %H:%M:%S";

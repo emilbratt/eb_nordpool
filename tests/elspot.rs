@@ -7,7 +7,7 @@ fn eur_24h() {
     let hourly = elspot::hourly::from_file("./tests/data/EUR_24H.json").unwrap();
 
     assert!(hourly.has_region("Tr.heim"));
-    assert!(hourly.prices_are_for_today("Tr.heim") == false);
+    assert!(!hourly.prices_are_for_today("Tr.heim"));
 
     let utc_dt = common::utc_dt_for_eur_24_hour();
 
