@@ -1,7 +1,12 @@
 use std::fs;
 
 use crate::elspot::{self, Price};
-use crate::error::{Error, Result};
+use crate::error::{
+    HourlyError,
+    HourlyResult,
+    RegionError,
+    RegionResult,
+};
 use crate::region_time;
 
 use chrono::{
@@ -18,26 +23,26 @@ use serde_json::{self, Map, Value};
 
 use reqwest;
 
-pub fn from_json(json_str: &str) -> Result<Hourly> {
+pub fn from_json(json_str: &str) -> HourlyResult<Hourly> {
     let hourly = Hourly::new(json_str)?;
 
     Ok(hourly)
 }
 
-pub fn from_file(path: &str) -> Result<Hourly> {
+pub fn from_file(path: &str) -> HourlyResult<Hourly> {
     let json_str = fs::read_to_string(path).unwrap();
 
     from_json(&json_str)
 }
 
-pub fn from_url(url: &str) -> Result<Hourly> {
+pub fn from_url(url: &str) -> HourlyResult<Hourly> {
     let body = reqwest::blocking::get(url).unwrap()
         .text().unwrap();
 
     from_json(&body)
 }
 
-pub fn from_nordpool(currency: elspot::Currencies) -> Result<Hourly> {
+pub fn from_nordpool(currency: elspot::Currencies) -> HourlyResult<Hourly> {
     match currency {
         elspot::Currencies::DKK => from_url("https://www.nordpoolgroup.com/api/marketdata/page/10?currency=DKK"),
         elspot::Currencies::EUR => from_url("https://www.nordpoolgroup.com/api/marketdata/page/10?currency=EUR"),
@@ -111,16 +116,23 @@ pub struct Hourly {
 }
 
 impl Hourly {
-    fn new(json_str: &str) -> Result<Self> {
-        let d: Self = serde_json::from_str(json_str).unwrap();
+    fn new(json_str: &str) -> HourlyResult<Self> {
+        let d = serde_json::from_str::<Self>(json_str);
 
-        match d.page_id {
-            10 => Ok(d),
-            _ => Err(Error::HourlyInvalidPageID),
+        match d {
+            Ok(v) => {
+                match v.page_id {
+                    10 => Ok(v),
+                    _ => Err(HourlyError::InvalidPageID),
+                }
+            },
+            Err(_) => {
+                Err(HourlyError::InvalidJSON)
+            },
         }
     }
 
-    fn col_index_for_region(&self, region: &str) -> usize {
+    fn col_index_for_region(&self, region: &str) -> RegionResult<usize> {
         let columns = &self.data.Rows[0].Columns;
 
         let res: Option<&ColEntry> = columns
@@ -128,8 +140,8 @@ impl Hourly {
             .find(|v| v.Name == region);
 
         match res {
-            Some(v) => v.Index.into(),
-            None => panic!("{:?}", Error::RegionIndexNotFound),
+            Some(v) => Ok(v.Index.into()),
+            None => Err(RegionError::RegionIndexNotFound),
         }
     }
 
@@ -152,16 +164,19 @@ impl Hourly {
             .iter()
             .find(|v| v.Name == region);
 
-        res.is_some()
+        match res {
+            Some(_) => true,
+            None => false,
+        }
     }
 
-    pub fn price_for_region_at_utc_dt(&self, region: &str, utc_dt: &DateTime<Utc>) -> Result<Price> {
+    pub fn price_for_region_at_utc_dt(&self, region: &str, utc_dt: &DateTime<Utc>) -> HourlyResult<Price> {
         let region_dt: DateTime<Tz> = region_time::region_dt_from_utc_dt(region, utc_dt);
 
-        let region_index = self.col_index_for_region(region);
+        let region_index = self.col_index_for_region(region).unwrap_or_else(|e| panic!("{}", e));
 
         if self.data.DataStartdate.date() != region_dt.date_naive() {
-            return Err(Error::HourlyPriceDateMismatch);
+            return Err(HourlyError::PriceDateMismatch);
         }
 
         let row_entries: Vec<&RowEntry> = self.data.Rows
@@ -173,7 +188,7 @@ impl Hourly {
         let row_entry: &RowEntry;
 
         match row_entries.len() {
-            0 => return Err(Error::HourlyPriceHourMismatch),
+            0 => return Err(HourlyError::PriceHourMismatch),
             1 => {
                 // 99.9% of the time, this block will match because we only have one entry for a specific time.
                 row_entry = row_entries[0];
@@ -188,10 +203,10 @@ impl Hourly {
                 match (region_dt + Duration::hours(1)).hour() {
                     3 => row_entry = row_entries[1],
                     2 => row_entry = row_entries[0],
-                    _ => return Err(Error::HourlyPriceHourMismatchCESTToCET),
+                    _ => return Err(HourlyError::PriceHourMismatchCESTToCET),
                 }
             },
-            _ => return Err(Error::HourlyPriceFilteredRowsExceededTwo),
+            _ => return Err(HourlyError::PriceFilteredRowsExceededTwo),
         }
 
         let p = Price {
@@ -204,7 +219,7 @@ impl Hourly {
         Ok(p)
     }
 
-    pub fn price_now_for_region(&self, region: &str) -> Result<Price> {
+    pub fn price_now_for_region(&self, region: &str) -> HourlyResult<Price> {
         let utc_now = Utc::now();
         self.price_for_region_at_utc_dt(region, &utc_now)
     }
@@ -212,7 +227,7 @@ impl Hourly {
     pub fn all_prices_for_region(&self, region: &str) -> Vec<Price> {
         let mut prices: Vec<Price> = vec![];
 
-        let region_index = self.col_index_for_region(region);
+        let region_index = self.col_index_for_region(region).unwrap_or_else(|e| panic!("{}", e));
 
         for row in self.data.Rows.iter() {
             if row.IsExtraRow {

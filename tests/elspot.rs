@@ -1,5 +1,5 @@
-use eb_nordpool::elspot;
-
+use std::fs;
+use eb_nordpool::{elspot, error};
 mod common;
 
 #[test]
@@ -51,4 +51,18 @@ fn nok_23h() {
 
     let prices = hourly.all_prices_for_region("Oslo");
     assert!(prices.len() == 23);
+}
+
+#[test]
+fn hourly_invalid_json() {
+    let json_str = fs::read_to_string("./tests/data/NOK_23H.json").unwrap();
+
+    let invalid = String::from(json_str + "!"); // Mess up the json file by adding a trailing character..
+
+    let hourly = elspot::hourly::from_json(&invalid);
+
+    match hourly {
+        Ok(_) => panic!(),
+        Err(e) => assert_eq!(e, error::HourlyError::InvalidJSON),
+    }
 }

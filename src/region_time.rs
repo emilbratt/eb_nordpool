@@ -1,6 +1,6 @@
 use crate::error::{
-    Error,
-    Result
+    RegionError,
+    RegionResult
 };
 
 use chrono::{
@@ -27,7 +27,7 @@ use chrono_tz::{
     }
 };
 
-fn tz_from_region(region: &str) -> Result<Tz> {
+fn tz_from_region(region: &str) -> RegionResult<Tz> {
     match region {
         "Oslo" | "Bergen" | "Kr.sand" | "Molde" | "Tr.heim" | "Tromsø" => Ok(Oslo),
         "NO1" | "NO2" | "NO3" | "NO4" | "NO5" => Ok(Oslo),
@@ -42,7 +42,7 @@ fn tz_from_region(region: &str) -> Result<Tz> {
         "DE-LU" => Ok(Luxembourg),
         "FR" => Ok(Paris),
         "NL" => Ok(Amsterdam),
-        _ => Err(Error::RegionTzNotSupported),
+        _ => Err(RegionError::RegionTzNotSupported),
     }
 }
 
