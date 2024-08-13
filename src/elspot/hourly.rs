@@ -11,6 +11,7 @@ use crate::region_time;
 
 use chrono::{
     DateTime,
+    NaiveDate,
     NaiveDateTime,
     Timelike,
     Utc,
@@ -145,16 +146,35 @@ impl Hourly {
         }
     }
 
+    /// Prints out a list of all `regions` found in the price data and how they are spelled.
+    ///
+    /// <pre>
+    /// Available regions:
+    /// 'SYS'
+    /// 'SE1'
+    /// 'SE2'
+    /// 'SE3'
+    /// 'SE4'
+    /// 'FI'
+    /// 'DK1'
+    /// 'DK2'
+    /// 'Oslo'
+    /// ...
+    /// </pre>
     pub fn list_regions(&self) {
         println!("Available regions:");
         for col in self.data.Rows[0].Columns.iter() {
-            print!("'{}' ", col.Name);
+            println!("'{}' ", col.Name);
         }
         println!();
     }
 
-    pub fn prices_are_for_today(&self, region: &str) -> bool {
-        self.data.DataStartdate.date() == region_time::local_dt_now_from_region(region).date_naive()
+    pub fn date(&self) -> NaiveDate {
+        self.data.DataStartdate.date()
+    }
+
+    pub fn prices_are_today_for_region(&self, region: &str) -> bool {
+        self.date() == region_time::region_dt_now_from_region(region).date_naive()
     }
 
     pub fn has_region(&self, region: &str) -> bool {
@@ -164,10 +184,7 @@ impl Hourly {
             .iter()
             .find(|v| v.Name == region);
 
-        match res {
-            Some(_) => true,
-            None => false,
-        }
+        res.is_some()
     }
 
     pub fn price_for_region_at_utc_dt(&self, region: &str, utc_dt: &DateTime<Utc>) -> HourlyResult<Price> {
@@ -211,7 +228,8 @@ impl Hourly {
 
         let p = Price {
             value: row_entry.Columns[region_index].Value.to_string(),
-            time: row_entry.StartTime,
+            from: row_entry.StartTime,
+            to: row_entry.EndTime,
             unit: self.data.Units[0].to_string(),
             region: region.to_string(),
         };
@@ -237,12 +255,13 @@ impl Hourly {
             } else {
                 let p = Price {
                     value: row.Columns[region_index].Value.to_string(),
-                    time: row.StartTime,
+                    from: row.StartTime,
+                    to: row.EndTime,
                     unit: self.data.Units[0].to_string(),
                     region: region.to_string(),
                 };
 
-                prices.push(p)
+                prices.push(p);
             }
         }
 

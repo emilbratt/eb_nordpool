@@ -5,6 +5,7 @@ use crate::error::{
 
 use chrono::{
     Utc,
+    offset::TimeZone,
     Local,
     DateTime,
 };
@@ -46,7 +47,7 @@ fn tz_from_region(region: &str) -> RegionResult<Tz> {
     }
 }
 
-pub fn local_dt_now_from_region(region: &str) -> DateTime<Tz> {
+pub fn region_dt_now_from_region(region: &str) -> DateTime<Tz> {
     match tz_from_region(region) {
         Ok(tz) => Local::now().with_timezone(&tz),
         Err(e) => panic!("{:?}", e),
@@ -58,4 +59,8 @@ pub fn region_dt_from_utc_dt(region: &str, utc_dt: &DateTime<Utc>) -> DateTime<T
         Ok(tz) => utc_dt.with_timezone(&tz),
         Err(e) => panic!("{:?}", e),
     }
+}
+
+pub fn utc_with_ymd_and_hms(year: i32, month: u32, day: u32, hour: u32, min: u32, sec: u32) -> DateTime<Utc> {
+    Utc.with_ymd_and_hms(year, month, day, hour, min, sec).unwrap()
 }

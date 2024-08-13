@@ -18,10 +18,12 @@ impl fmt::Display for Currencies {
     }
 }
 
+/// Prices returned comes in the form of this datatype.
 #[derive(Debug)]
 pub struct Price {
     pub region: String,
-    pub time: NaiveDateTime,
+    pub from: NaiveDateTime,
+    pub to: NaiveDateTime,
     pub value: String,
     pub unit: String,
 }

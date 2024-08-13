@@ -1,5 +1,5 @@
 use std::fs;
-use eb_nordpool::{elspot, error};
+use eb_nordpool::{elspot, error, region_time};
 mod common;
 
 #[test]
@@ -7,7 +7,7 @@ fn eur_24h() {
     let hourly = elspot::hourly::from_file("./tests/data/EUR_24H.json").unwrap();
 
     assert!(hourly.has_region("Tr.heim"));
-    assert!(!hourly.prices_are_for_today("Tr.heim"));
+    assert!(!hourly.prices_are_today_for_region("Tr.heim"));
 
     let utc_dt = common::utc_dt_for_eur_24_hour();
 
@@ -65,4 +65,10 @@ fn hourly_invalid_json() {
         Ok(_) => panic!(),
         Err(e) => assert_eq!(e, error::HourlyError::InvalidJSON),
     }
+}
+
+#[test]
+fn region_time() {
+    // Just run the function. It ensures it will not be altered without a test failure.
+    region_time::utc_with_ymd_and_hms(2024, 6, 20, 11, 0, 0);
 }
