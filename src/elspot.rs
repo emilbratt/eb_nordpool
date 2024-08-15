@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 pub mod hourly;
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Currencies {
     DKK,
     EUR,

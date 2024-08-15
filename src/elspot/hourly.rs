@@ -37,10 +37,11 @@ pub fn from_file(path: &str) -> HourlyResult<Hourly> {
 }
 
 pub fn from_url(url: &str) -> HourlyResult<Hourly> {
-    let body = reqwest::blocking::get(url).unwrap()
-        .text().unwrap();
+    let r = reqwest::blocking::get(url).unwrap();
 
-    from_json(&body)
+    let json_str = r.text().unwrap();
+
+    from_json(&json_str)
 }
 
 pub fn from_nordpool(currency: elspot::Currencies) -> HourlyResult<Hourly> {
@@ -52,7 +53,7 @@ pub fn from_nordpool(currency: elspot::Currencies) -> HourlyResult<Hourly> {
     }
 }
 
-#[derive(Serialize, Debug, Clone, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 struct ColEntry {
     Index: u8,
     Scale: u8,
@@ -73,7 +74,7 @@ struct ColEntry {
     UseDashDisplayStyle: bool,
 }
 
-#[derive(Serialize, Debug, Clone, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 struct RowEntry {
     Columns: Vec<ColEntry>,
     Name: String,
@@ -88,7 +89,7 @@ struct RowEntry {
     Parent: Option<Value>,
 }
 
-#[derive(Serialize, Debug, Clone, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 struct Data {
     Rows: Vec<RowEntry>,
     DataStartdate: NaiveDateTime,
@@ -105,7 +106,7 @@ struct Data {
     IsDivided: bool,
 }
 
-#[derive(Serialize, Debug, Clone, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")] // re-format the name "pageId" from input data to "page_id" used in the struct.
 pub struct Hourly {
     data: Data,
@@ -161,7 +162,7 @@ impl Hourly {
     /// 'Oslo'
     /// ...
     /// </pre>
-    pub fn list_regions(&self) {
+    pub fn print_regions(&self) {
         println!("Available regions:");
         for col in self.data.Rows[0].Columns.iter() {
             println!("'{}' ", col.Name);
@@ -169,12 +170,11 @@ impl Hourly {
         println!();
     }
 
-    pub fn date(&self) -> NaiveDate {
-        self.data.DataStartdate.date()
-    }
-
-    pub fn prices_are_today_for_region(&self, region: &str) -> bool {
-        self.date() == region_time::region_dt_now_from_region(region).date_naive()
+    pub fn regions(&self) -> Vec<&str> {
+        self.data.Rows[0].Columns
+            .iter()
+            .map(|col| col.Name.as_ref())
+            .collect()
     }
 
     pub fn has_region(&self, region: &str) -> bool {
@@ -187,10 +187,18 @@ impl Hourly {
         res.is_some()
     }
 
+    pub fn date(&self) -> NaiveDate {
+        self.data.DataStartdate.date()
+    }
+
+    pub fn prices_are_today_for_region(&self, region: &str) -> bool {
+        self.date() == region_time::region_dt_now_from_region(region).date_naive()
+    }
+
     pub fn price_for_region_at_utc_dt(&self, region: &str, utc_dt: &DateTime<Utc>) -> HourlyResult<Price> {
         let region_dt: DateTime<Tz> = region_time::region_dt_from_utc_dt(region, utc_dt);
 
-        let region_index = self.col_index_for_region(region).unwrap_or_else(|e| panic!("{}", e));
+        let index_for_region = self.col_index_for_region(region).unwrap_or_else(|e| panic!("{}", e));
 
         if self.data.DataStartdate.date() != region_dt.date_naive() {
             return Err(HourlyError::PriceDateMismatch);
@@ -227,7 +235,7 @@ impl Hourly {
         }
 
         let p = Price {
-            value: row_entry.Columns[region_index].Value.to_string(),
+            value: row_entry.Columns[index_for_region].Value.to_string(),
             from: row_entry.StartTime,
             to: row_entry.EndTime,
             unit: self.data.Units[0].to_string(),
@@ -245,16 +253,16 @@ impl Hourly {
     pub fn all_prices_for_region(&self, region: &str) -> Vec<Price> {
         let mut prices: Vec<Price> = vec![];
 
-        let region_index = self.col_index_for_region(region).unwrap_or_else(|e| panic!("{}", e));
+        let index_for_region = self.col_index_for_region(region).unwrap_or_else(|e| panic!("{}", e));
 
         for row in self.data.Rows.iter() {
             if row.IsExtraRow {
                 continue; // Extra rows are reserved for aggregate values such as min, max, avg etc..
-            } else if row.StartTime.hour() == 2 && row.Columns[region_index].Value == "-" {
-                continue; // Moving from CET to CEST and the nordpool data includes an empty value, but we skip it.
+            } else if row.StartTime.hour() == 2 && row.Columns[index_for_region].Value == "-" {
+                continue; // Moving from CET to CEST and the nordpool data includes an empty value which we skip.
             } else {
                 let p = Price {
-                    value: row.Columns[region_index].Value.to_string(),
+                    value: row.Columns[index_for_region].Value.to_string(),
                     from: row.StartTime,
                     to: row.EndTime,
                     unit: self.data.Units[0].to_string(),
@@ -266,5 +274,14 @@ impl Hourly {
         }
 
         prices
+    }
+
+    pub fn to_string(&self) -> String {
+        serde_json::to_string(&self).unwrap_or_else(|e| panic!("{}", e))
+    }
+
+    pub fn to_file(&self, path: &str) {
+        let s = self.to_string();
+        fs::write(path, s.as_bytes()).unwrap_or_else(|e| panic!("{}", e));
     }
 }

@@ -15,14 +15,28 @@
 //! let data = elspot::hourly::from_nordpool(currency).unwrap();
 //! // ..this http request is currently blocking, but this might change in the future.
 //!
-//! // Already have the data stored locally? You can simply load from a file instead.
+//! // Gives you the actual date for the prices in YYYY-MM-DD format (chrono's NaiveDate type).
+//! data.date()
+//!
+//! // Save data to file.
+//! data.to_file("path/to/data.json");
+//!
+//! // When or if you have data stored locally, you can simply load it from a file.
 //! let data = elspot::hourly::from_file("path/to/data.json").unwrap();
 //!
-//! // Print out all available regions. This is convenient for finding a specific region.
-//! data.list_regions();
+//! // Serialize data to json string, nice if you want to load it somewhere else.
+//! let s = data.to_string();
 //!
-//! // Get current date for prices in the YYYY-MM-DD format.
-//! data.date()
+//! // Print out all available regions. This is convenient for finding a specific region.
+//! data.print_regions();
+//!
+//! // Get all regions in a Vec<&str>, nice if you want to do something with all regions.
+//! let regions = data.regions();
+//!
+//! // Check if a region exists in dataset.
+//! if data.has_region("Oslo") {
+//!     // ..do something
+//! }
 //!
 //! // Get all prices for a specific region (always in ascending order starting at time 00:00).
 //! let prices = data.all_prices_for_region("Oslo");
@@ -34,11 +48,12 @@
 //!
 //! // Print one price.
 //! let p = &prices[8];
-//! println!("Price for {} between {} and {} is {} {} ", p.region, p.from, p.to, p.value, p.unit);
+//! let (region, from, to, value, unit) = (&p.region, &p.from, &p.to, &p.value, &p.unit);
+//! println!("Price for {region} between {from} and {to} is {value} {unit}");
 //!
 //! // Price now for specific region.
 //! if let Ok(p) = hourly.price_now_for_region("Oslo") {
-//!     println!("Price for Oslo is currenlty {} {}", p.value, p.unit);
+//!     println!("Price for Oslo now:  {} {}", p.value, p.unit);
 //! }
 //!
 //! // Get price for specific timestamp (must be in Utc)
