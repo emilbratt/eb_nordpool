@@ -47,3 +47,9 @@ pub fn utc_dt_for_nok_25_hour() -> DateTime<Utc> {
     // All good, return one of the values..
     utc_dt
 }
+
+pub fn dummy_naive_datetime() -> NaiveDateTime {
+    let dt = "0000-01-01 00:00:00";
+    let fmt = "%Y-%m-%d %H:%M:%S";
+    NaiveDateTime::parse_from_str(dt, fmt).unwrap()
+}

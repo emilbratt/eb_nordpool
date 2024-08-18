@@ -5,7 +5,7 @@
 //! Fetching prices from nordpoolgroup.com or from file.
 //!
 //! ```
-//! use eb_nordpool::{elspot, region_time};
+//! use eb_nordpool::{elspot, region_time, units};
 //!
 //! // Set the currency "DKK, EUR, NOK or SEK", when downloading prices from nordpool.
 //! let currency = elspot::Currencies::NOK;
@@ -64,6 +64,13 @@
 //!     Ok(p) => println!("{}", p),
 //!     Err(e) => println!("{}", e),
 //! }
+//!
+//! // Convert currency and power units (remember to declare as mutable..).
+//! let mut p = prices[3].clone();
+//! units::to_currency_sub_unit(&mut p); // Converts "160,00" to "16000" e.g. to cents.
+//! units::to_currency_full_unit(&mut p); // Same as above, but the other way around.
+//! units::to_power_kwh_unit(&mut p); // Converts from MWh to kWh (also adjusts the price value).
+//! units::to_power_mwh_unit(&mut p); // Same as above, but the other way around.
 //! ```
 
 #![allow(non_snake_case)] // Struct naming is in "PascalCase" to map directly with data from nordpool..
@@ -71,3 +78,4 @@
 pub mod elspot;
 pub mod error;
 pub mod region_time;
+pub mod units;
