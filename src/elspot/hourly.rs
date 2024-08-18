@@ -1,4 +1,4 @@
-use std::fs;
+use std::{fs, fmt};
 
 use crate::elspot::{self, Price};
 use crate::error::{
@@ -276,12 +276,18 @@ impl Hourly {
         prices
     }
 
-    pub fn to_string(&self) -> String {
+    pub fn to_json(&self) -> String {
         serde_json::to_string(&self).unwrap_or_else(|e| panic!("{}", e))
     }
 
     pub fn to_file(&self, path: &str) {
         let s = self.to_string();
         fs::write(path, s.as_bytes()).unwrap_or_else(|e| panic!("{}", e));
+    }
+}
+
+impl fmt::Display for Hourly {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
     }
 }

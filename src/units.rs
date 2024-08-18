@@ -59,14 +59,14 @@ fn power_unit_swap(unit: &mut String) {
 
 fn move_comma_right(value: &mut String, moves: usize) {
     // Remove leading zeros.
-    while value.chars().next() == Some('0') {
+    while value.starts_with('0') {
         value.remove(0);
     }
 
     match value.find(',') {
         Some(i) => {
             // Remove trailing zeros as they have no value after comma.
-            while value.chars().last() == Some('0') {
+            while value.ends_with('0') {
                 value.pop();
             }
             value.remove(i);
@@ -89,7 +89,7 @@ fn move_comma_right(value: &mut String, moves: usize) {
 
 fn move_comma_left(value: &mut String, moves: usize) {
     // Remove leading zeros.
-    while value.chars().next() == Some('0') {
+    while value.starts_with('0') {
         value.remove(0);
     }
 
@@ -100,16 +100,16 @@ fn move_comma_left(value: &mut String, moves: usize) {
                 value.insert_str(0, "0".repeat(moves-i).as_ref());
                 value.insert_str(0, "0,");
             } else {
-                value.insert_str(i-moves, ",");
+                value.insert(i-moves, ',');
             }
 
             // Remove trailing zeros as they have no value as last digit after comma.
-            while value.chars().last() == Some('0') {
+            while value.ends_with('0') {
                 value.pop();
             }
 
             // Remove trailing comma if there are no fractions left.
-            if value.chars().last() == Some(',') {
+            if value.ends_with(',') {
                 value.pop();
             }
         },
@@ -118,7 +118,7 @@ fn move_comma_left(value: &mut String, moves: usize) {
                 value.insert(0, '0');
             }
 
-            value.insert_str(value.len()-moves, ",");
+            value.insert(value.len()-moves, ',');
         },
     }
 }
@@ -126,7 +126,7 @@ fn move_comma_left(value: &mut String, moves: usize) {
 
 /// Converts the base currency to its fractional value by moving comma 2 steps to the right.
 pub fn to_currency_sub_unit(p: &mut Price) {
-    if let Some(_) = p.unit.find("(1%)") {
+    if p.unit.contains("(1%)") {
         panic!("Currency already in sub-unit '{}'", p.unit);
     }
 
@@ -136,7 +136,7 @@ pub fn to_currency_sub_unit(p: &mut Price) {
 
 /// Converts the currencies sub-unit to its full value by moving comma 2 steps to the left.
 pub fn to_currency_full_unit(p: &mut Price) {
-    if let None = p.unit.find("(1%)") {
+    if !p.unit.contains("(1%)") {
         panic!("Currency already in full unit '{}'", p.unit);
     }
 
@@ -146,7 +146,7 @@ pub fn to_currency_full_unit(p: &mut Price) {
 
 /// The price is calculated to 1/1000 of its original value (1/1000M = 1k).
 pub fn to_power_kwh_unit(p: &mut Price) {
-    if let Some(_) = p.unit.find("kWh") {
+    if p.unit.contains("kWh") {
         panic!("Power unit already in kWh '{}'", p.unit);
     }
 
@@ -156,7 +156,7 @@ pub fn to_power_kwh_unit(p: &mut Price) {
 
 /// The price is calculated to 1000x of its original value (1000k = 1M).
 pub fn to_power_mwh_unit(p: &mut Price) {
-    if let Some(_) = p.unit.find("MWh") {
+    if p.unit.contains("MWh") {
         panic!("Power unit already in MWh '{}'", p.unit);
     }
 

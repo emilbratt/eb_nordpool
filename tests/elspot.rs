@@ -57,12 +57,12 @@ fn nok_23h() {
 
 #[test]
 fn hourly_invalid_json() {
-    let json_str = fs::read_to_string("./tests/data/NOK_23H.json").unwrap();
+    let mut json_str = fs::read_to_string("./tests/data/NOK_23H.json").unwrap();
 
-    let invalid = String::from(json_str + "!"); // Mess up the json file by adding a trailing character..
+    // Mess up the json file by adding a trailing character..
+    json_str.push('!');
 
-    let data = elspot::hourly::from_json(&invalid);
-
+    let data = elspot::hourly::from_json(&json_str);
     match data {
         Ok(_) => panic!(),
         Err(e) => assert_eq!(e, error::HourlyError::InvalidJSON),
@@ -74,7 +74,7 @@ fn hourly_to_string() {
     let data = elspot::hourly::from_file("./tests/data/EUR_24H.json").unwrap();
 
     // Save data to a string (serialized json).
-    let s = data.to_string();
+    let s = data.to_json();
 
     // Reload the string and see if it still works.
     if let Err(e) = elspot::hourly::from_json(&s) {

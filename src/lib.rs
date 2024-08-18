@@ -25,7 +25,7 @@
 //! let data = elspot::hourly::from_file("path/to/data.json").unwrap();
 //!
 //! // Serialize data to json string, nice if you want to load it somewhere else.
-//! let s = data.to_string();
+//! let s = data.to_json();
 //!
 //! // Print out all available regions. This is convenient for finding a specific region.
 //! data.print_regions();
