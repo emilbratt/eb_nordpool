@@ -7,6 +7,7 @@ pub type HourlyResult<T> = Result<T, HourlyError>;
 pub enum HourlyError {
     InvalidJSON,
     InvalidPageID,
+    InvalidUnitstring,
     PriceDateMismatch,
     PriceHourMismatch,
     PriceHourMismatchCESTToCET,
@@ -22,13 +23,27 @@ impl fmt::Display for HourlyError {
 
 pub type RegionResult<T> = Result<T, RegionError>;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Debug)]
 pub enum RegionError {
     RegionIndexNotFound,
     RegionTzNotSupported,
 }
 
 impl fmt::Display for RegionError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+pub type UnitResult<T> = Result<T, UnitError>;
+
+#[derive(Debug)]
+pub enum UnitError {
+    InvalidCurrencyUnit,
+    InvalidPowerUnit,
+}
+
+impl fmt::Display for UnitError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }

@@ -1,6 +1,6 @@
 use std::{fs, fmt};
 
-use crate::elspot::{self, Price};
+use crate::elspot::Price;
 use crate::error::{
     HourlyError,
     HourlyResult,
@@ -8,6 +8,7 @@ use crate::error::{
     RegionResult,
 };
 use crate::region_time;
+use crate::units;
 
 use chrono::{
     DateTime,
@@ -23,6 +24,11 @@ use serde::{Deserialize, Serialize};
 use serde_json::{self, Map, Value};
 
 use reqwest;
+
+const NORDPOOL_URL_EUR: &str = "https://www.nordpoolgroup.com/api/marketdata/page/10?currency=EUR";
+const NORDPOOL_URL_DKK: &str = "https://www.nordpoolgroup.com/api/marketdata/page/10?currency=DKK";
+const NORDPOOL_URL_NOK: &str = "https://www.nordpoolgroup.com/api/marketdata/page/10?currency=NOK";
+const NORDPOOL_URL_SEK: &str = "https://www.nordpoolgroup.com/api/marketdata/page/10?currency=SEK";
 
 pub fn from_json(json_str: &str) -> HourlyResult<Hourly> {
     let hourly = Hourly::new(json_str)?;
@@ -44,13 +50,20 @@ pub fn from_url(url: &str) -> HourlyResult<Hourly> {
     from_json(&json_str)
 }
 
-pub fn from_nordpool(currency: elspot::Currencies) -> HourlyResult<Hourly> {
-    match currency {
-        elspot::Currencies::DKK => from_url("https://www.nordpoolgroup.com/api/marketdata/page/10?currency=DKK"),
-        elspot::Currencies::EUR => from_url("https://www.nordpoolgroup.com/api/marketdata/page/10?currency=EUR"),
-        elspot::Currencies::NOK => from_url("https://www.nordpoolgroup.com/api/marketdata/page/10?currency=NOK"),
-        elspot::Currencies::SEK => from_url("https://www.nordpoolgroup.com/api/marketdata/page/10?currency=SEK"),
-    }
+pub fn from_nordpool_eur() -> HourlyResult<Hourly> {
+    from_url(NORDPOOL_URL_EUR)
+}
+
+pub fn from_nordpool_dkk() -> HourlyResult<Hourly> {
+    from_url(NORDPOOL_URL_DKK)
+}
+
+pub fn from_nordpool_nok() -> HourlyResult<Hourly> {
+    from_url(NORDPOOL_URL_NOK)
+}
+
+pub fn from_nordpool_sek() -> HourlyResult<Hourly> {
+    from_url(NORDPOOL_URL_SEK)
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -106,12 +119,22 @@ struct Data {
     IsDivided: bool,
 }
 
+// This enum "Currencies" is only used to satisfy nordpools raw price data JSON structure..
+// We never use it ourselves because currency is stored within the data entry in the field "units".
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum Currencies {
+    DKK,
+    EUR,
+    NOK,
+    SEK,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")] // re-format the name "pageId" from input data to "page_id" used in the struct.
 pub struct Hourly {
     data: Data,
-    currency: elspot::Currencies,
-    page_id: u8,
+    currency: Currencies,
+    page_id: usize,
 
     #[serde(flatten)]
     extra: Map<String, Value>,
@@ -119,18 +142,24 @@ pub struct Hourly {
 
 impl Hourly {
     fn new(json_str: &str) -> HourlyResult<Self> {
-        let d = serde_json::from_str::<Self>(json_str);
-
-        match d {
-            Ok(v) => {
-                match v.page_id {
-                    10 => Ok(v),
-                    _ => Err(HourlyError::InvalidPageID),
+        match serde_json::from_str::<Self>(json_str) {
+            Ok(data) => {
+                // Page id for hourly elspot is 10.
+                if data.page_id != 10 {
+                    return Err(HourlyError::InvalidPageID);
                 }
-            },
+
+                // The 'unit_string' should be identical to one of the strings in units::EXPECTED_UNIT_SRINGS.
+                let unit_string = data.data.Units[0].as_ref();
+                if !units::EXPECTED_UNIT_SRINGS.contains(&unit_string) {
+                    return Err(HourlyError::InvalidUnitstring);
+                }
+
+                Ok(data)
+            }
             Err(_) => {
                 Err(HourlyError::InvalidJSON)
-            },
+            }
         }
     }
 
@@ -147,7 +176,7 @@ impl Hourly {
         }
     }
 
-    /// Prints out a list of all `regions` found in the price data and how they are spelled.
+    /// Prints out a list of all `regions` the price dataset.
     ///
     /// <pre>
     /// Available regions:
@@ -217,7 +246,7 @@ impl Hourly {
             1 => {
                 // 99.9% of the time, this block will match because we only have one entry for a specific time.
                 row_entry = row_entries[0];
-            },
+            }
             2 => {
                 // This happens on rare occasions.
                 // The datetime moves from CEST to CET e.g. from summer time to winter time.
@@ -230,7 +259,7 @@ impl Hourly {
                     2 => row_entry = row_entries[0],
                     _ => return Err(HourlyError::PriceHourMismatchCESTToCET),
                 }
-            },
+            }
             _ => return Err(HourlyError::PriceFilteredRowsExceededTwo),
         }
 
@@ -238,8 +267,9 @@ impl Hourly {
             value: row_entry.Columns[index_for_region].Value.to_string(),
             from: row_entry.StartTime,
             to: row_entry.EndTime,
-            unit: self.data.Units[0].to_string(),
             region: region.to_string(),
+            currency_unit: units::Currency::new(&self.data.Units[0]).unwrap_or_else(|e| panic!("{}", e)),
+            power_unit: units::Power::new(&self.data.Units[0]).unwrap_or_else(|e| panic!("{}", e)),
         };
 
         Ok(p)
@@ -265,8 +295,9 @@ impl Hourly {
                     value: row.Columns[index_for_region].Value.to_string(),
                     from: row.StartTime,
                     to: row.EndTime,
-                    unit: self.data.Units[0].to_string(),
                     region: region.to_string(),
+                    currency_unit: units::Currency::new(&self.data.Units[0]).unwrap_or_else(|e| panic!("{}", e)),
+                    power_unit: units::Power::new(&self.data.Units[0]).unwrap_or_else(|e| panic!("{}", e)),
                 };
 
                 prices.push(p);
@@ -276,7 +307,7 @@ impl Hourly {
         prices
     }
 
-    pub fn to_json(&self) -> String {
+    pub fn to_json_string(&self) -> String {
         serde_json::to_string(&self).unwrap_or_else(|e| panic!("{}", e))
     }
 

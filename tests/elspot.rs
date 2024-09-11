@@ -14,7 +14,7 @@ fn eur_24h() {
 
     let mut price = data.price_for_region_at_utc_dt("Tr.heim", &utc_dt).unwrap();
     assert_eq!("5,82", price.value);
-    assert_eq!("EUR/MWh", price.unit);
+    assert_eq!("EUR", price.currency_unit.country_str());
 
     price = data.price_for_region_at_utc_dt("FI", &utc_dt).unwrap();
     assert_eq!("-5,00", price.value);
@@ -34,7 +34,6 @@ fn nok_25h() {
 
     let price = data.price_for_region_at_utc_dt("Tr.heim", &utc_dt).unwrap();
     assert_eq!("167,66", price.value);
-    assert_eq!("NOK/MWh", price.unit);
 
     let prices = data.all_prices_for_region("Oslo");
     assert!(prices.len() == 25);
@@ -49,7 +48,6 @@ fn nok_23h() {
 
     let price = data.price_for_region_at_utc_dt("Oslo", &utc_dt).unwrap();
     assert_eq!("868,18", price.value);
-    assert_eq!("NOK/MWh", price.unit);
 
     let prices = data.all_prices_for_region("Oslo");
     assert!(prices.len() == 23);
@@ -74,12 +72,10 @@ fn hourly_to_string() {
     let data = elspot::hourly::from_file("./tests/data/EUR_24H.json").unwrap();
 
     // Save data to a string (serialized json).
-    let s = data.to_json();
+    let s = data.to_json_string();
 
-    // Reload the string and see if it still works.
-    if let Err(e) = elspot::hourly::from_json(&s) {
-        panic!("{}", e);
-    }
+    // We just reload the string and see if it works, unwrap() will fail if Err.
+    elspot::hourly::from_json(&s).unwrap();
 }
 
 #[test]
@@ -94,48 +90,35 @@ fn units() {
         region: String::from("Oslo"), // Region not important here..
         from: common::dummy_naive_datetime(), // Time not important here..
         to: common::dummy_naive_datetime(), // Time not important here..
-        value: String::from("0167,660"),
-        unit: String::from("NOK/MWh"),
+        value: String::from("0167,680"), // Add trailing zero, we should be able to handle it.
+        currency_unit: units::Currency::NOK(units::CurrencyUnit::Full),
+        power_unit: units::Power::MWh,
     };
-    assert!("0167,660" == p.value && "NOK/MWh" == p.unit);
 
-    units::to_currency_sub_unit(&mut p);
-    assert!("16766" == p.value && "NOK(1%)/MWh" == p.unit);
+    units::convert_to_currency_fraction(&mut p);
+    assert_eq!("16768", p.value);
+    assert_eq!(16768f32, p.as_f32());
+    assert_eq!("Øre", p.currency_unit.to_str());
+    assert_eq!("MWh", p.power_unit.to_str());
 
-    units::to_power_kwh_unit(&mut p);
-    assert!("16,766" == p.value && "NOK(1%)/kWh" == p.unit);
+    units::convert_to_kwh(&mut p);
+    assert_eq!("16,768", p.value);
+    assert_eq!(17f32, p.as_f32());
+    assert_eq!("kWh", p.power_unit.to_str());
 
-    units::to_currency_full_unit(&mut p);
-    assert!("0,16766" == p.value && "NOK/kWh" == p.unit);
+    units::convert_to_currency_full(&mut p);
+    assert_eq!("0,16768", p.value);
+    assert_eq!(0.17f32, p.as_f32());
+    assert_eq!("Kr.", p.currency_unit.to_str());
+    assert_eq!("kWh", p.power_unit.to_str());
 
-    units::to_power_mwh_unit(&mut p);
-    assert!("167,66" == p.value && "NOK/MWh" == p.unit);
+    units::convert_to_mwh(&mut p);
+    assert_eq!(167.68f32, p.as_f32());
+    assert_eq!("167,68", p.value);
+    assert_eq!("MWh", p.power_unit.to_str());
 
-    (p.value, p.unit) = (String::from("0,500"), String::from("NOK/MWh"));
-    units::to_currency_sub_unit(&mut p);
-    assert!("50" == p.value && "NOK(1%)/MWh" == p.unit);
-
-    (p.value, p.unit) = (String::from("50,0"), String::from("NOK(1%)/kWh"));
-    units::to_currency_full_unit(&mut p);
-    assert!("0,5" == p.value && "NOK/kWh" == p.unit);
-
-    (p.value, p.unit) = (String::from("50,0"), String::from("NOK(1%)/kWh"));
-    units::to_power_mwh_unit(&mut p);
-    assert!("50000" == p.value && "NOK(1%)/MWh" == p.unit);
-
-    (p.value, p.unit) = (String::from("0,00"), String::from("NOK/kWh"));
-    units::to_currency_sub_unit(&mut p);
-    assert!("00" == p.value && "NOK(1%)/kWh" == p.unit);
-
-    (p.value, p.unit) = (String::from("0,00"), String::from("NOK(1%)/kWh"));
-    units::to_currency_full_unit(&mut p);
-    assert!("0" == p.value && "NOK/kWh" == p.unit);
-
-    (p.value, p.unit) = (String::from("000"), String::from("NOK(1%)/kWh"));
-    units::to_currency_full_unit(&mut p);
-    assert!("0,00" == p.value && "NOK/kWh" == p.unit);
-
-    (p.value, p.unit) = (String::from("10"), String::from("NOK/kWh"));
-    units::to_currency_sub_unit(&mut p);
-    assert!("1000" == p.value && "NOK(1%)/kWh" == p.unit);
+    p.value = String::from("10,505");
+    units::convert_to_currency_fraction(&mut p);
+    assert_eq!(1051f32, p.as_f32());
+    assert_eq!("Øre", p.currency_unit.to_str());
 }
