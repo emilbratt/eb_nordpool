@@ -193,7 +193,7 @@ impl Hourly {
     /// </pre>
     pub fn print_regions(&self) {
         println!("Available regions:");
-        for col in self.data.Rows[0].Columns.iter() {
+        for col in &self.data.Rows[0].Columns {
             println!("'{}' ", col.Name);
         }
         println!();
@@ -288,20 +288,21 @@ impl Hourly {
         for row in self.data.Rows.iter() {
             if row.IsExtraRow {
                 continue; // Extra rows are reserved for aggregate values such as min, max, avg etc..
-            } else if row.StartTime.hour() == 2 && row.Columns[index_for_region].Value == "-" {
-                continue; // Moving from CET to CEST and the nordpool data includes an empty value which we skip.
-            } else {
-                let p = Price {
-                    value: row.Columns[index_for_region].Value.to_string(),
-                    from: row.StartTime,
-                    to: row.EndTime,
-                    region: region.to_string(),
-                    currency_unit: units::Currency::new(&self.data.Units[0]).unwrap_or_else(|e| panic!("{}", e)),
-                    power_unit: units::Power::new(&self.data.Units[0]).unwrap_or_else(|e| panic!("{}", e)),
-                };
-
-                prices.push(p);
             }
+            if row.StartTime.hour() == 2 && row.Columns[index_for_region].Value == "-" {
+                continue; // Moving from CET to CEST and the nordpool data includes an empty value which we skip.
+            }
+
+            let p = Price {
+                value: row.Columns[index_for_region].Value.to_string(),
+                from: row.StartTime,
+                to: row.EndTime,
+                region: region.to_string(),
+                currency_unit: units::Currency::new(&self.data.Units[0]).unwrap_or_else(|e| panic!("{}", e)),
+                power_unit: units::Power::new(&self.data.Units[0]).unwrap_or_else(|e| panic!("{}", e)),
+            };
+
+            prices.push(p);
         }
 
         prices

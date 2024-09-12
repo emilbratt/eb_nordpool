@@ -1,4 +1,4 @@
-//! eb_nordpool provides an easy way to extract elspot prices from Nordpool.
+//! `eb_nordpool` provides an easy way to extract elspot prices from Nordpool.
 //!
 //! # Getting started
 //!
@@ -79,6 +79,9 @@
 //! ```
 
 #![allow(non_snake_case)] // Struct naming is in "PascalCase" to map directly with data from nordpool..
+#![allow(clippy::struct_excessive_bools)]
+#![allow(clippy::match_same_arms)]
+#![allow(missing_docs)]
 
 pub mod elspot;
 pub mod error;

@@ -220,33 +220,30 @@ fn move_comma_left(value: &mut String, moves: usize) {
         value.remove(0);
     }
 
-    match value.find(',') {
-        Some(i) => {
-            value.remove(i);
-            if i <= moves {
-                value.insert_str(0, "0".repeat(moves-i).as_ref());
-                value.insert_str(0, "0,");
-            } else {
-                value.insert(i-moves, ',');
-            }
+    if let Some(i) = value.find(',') {
+        value.remove(i);
+        if i <= moves {
+            value.insert_str(0, "0".repeat(moves-i).as_ref());
+            value.insert_str(0, "0,");
+        } else {
+            value.insert(i-moves, ',');
+        }
 
-            // Remove trailing zeros as they have no value as last digit after comma.
-            while value.ends_with('0') {
-                value.pop();
-            }
+        // Remove trailing zeros as they have no value as last digit after comma.
+        while value.ends_with('0') {
+            value.pop();
+        }
 
-            // Remove trailing comma if there are no fractions left.
-            if value.ends_with(',') {
-                value.pop();
-            }
-        },
-        None => {
-            while value.len() <= moves {
-                value.insert(0, '0');
-            }
+        // Remove trailing comma if there are no fractions left.
+        if value.ends_with(',') {
+            value.pop();
+        }
+    } else {
+        while value.len() <= moves {
+            value.insert(0, '0');
+        }
 
-            value.insert(value.len()-moves, ',');
-        },
+        value.insert(value.len()-moves, ',');
     }
 }
 

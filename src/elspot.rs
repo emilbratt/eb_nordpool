@@ -35,20 +35,16 @@ impl Price {
         let mut split = f.split('.');
         let whole_numbers = split.next().unwrap();
         match split.next() {
-            None => {
-                whole_numbers.parse::<f32>().unwrap()
-            }
-            Some(fractions) if fractions.is_empty() => {
+            Some("") | None => {
                 whole_numbers.parse::<f32>().unwrap()
             }
             Some(fractions) => {
-                let formatted: String;
-                if fractions.len() > 3 {
+                let formatted: String = if fractions.len() > 3 {
                     // Only keep at most 3 fractions, the 3rd is for rounding and fixes some bugs with rounding errors.
-                    formatted = format!("{}.{}", whole_numbers, &fractions.to_string()[..3]);
+                    format!("{}.{}", whole_numbers, &fractions.to_string()[..3])
                 } else {
-                    formatted = format!("{}.{}", whole_numbers, fractions);
-                }
+                    format!("{}.{}", whole_numbers, fractions)
+                };
 
                 let f32_parsed = formatted.parse::<f32>().unwrap();
                 let f32_two_decimals = (f32_parsed * 100.0).round() / 100.0; // Only keep two decimal places fractions.
@@ -67,6 +63,6 @@ impl Price {
         let power_unit = self.power_unit.to_str();
         let country = self.currency_unit.country_str();
 
-        format!("{} {} {}/{}", country, value, currency_unit, power_unit)
+        format!("{country} {value} {currency_unit}/{power_unit}")
     }
 }
