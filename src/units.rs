@@ -42,17 +42,12 @@ impl fmt::Display for Currency {
 impl Currency {
     pub fn new(unit_string: &str) -> UnitResult<Self> {
         // unit_string looks like this "EUR/MWh"..
-        let currency_unit = &unit_string[..3];
-        if currency_unit == "EUR" {
-            Ok(Self::EUR(CurrencyUnit::Full))
-        } else if currency_unit == "DKK" {
-            Ok(Self::DKK(CurrencyUnit::Full))
-        } else if currency_unit == "NOK" {
-            Ok(Self::NOK(CurrencyUnit::Full))
-        } else if currency_unit == "SEK" {
-            Ok(Self::SEK(CurrencyUnit::Full))
-        } else {
-            Err(UnitError::InvalidCurrencyUnit)
+        match unit_string[..3].as_ref() {
+            "EUR" => Ok(Self::EUR(CurrencyUnit::Full)),
+            "DKK" => Ok(Self::DKK(CurrencyUnit::Full)),
+            "NOK" => Ok(Self::NOK(CurrencyUnit::Full)),
+            "SEK" => Ok(Self::SEK(CurrencyUnit::Full)),
+            _ => Err(UnitError::InvalidCurrencyUnit),
         }
     }
 
@@ -76,29 +71,19 @@ impl Currency {
 
     pub fn is_fraction(&self) -> bool {
         match self {
-            Self::EUR(CurrencyUnit::Fraction) => true,
-            Self::DKK(CurrencyUnit::Fraction) => true,
-            Self::NOK(CurrencyUnit::Fraction) => true,
-            Self::SEK(CurrencyUnit::Fraction) => true,
-
-            Self::EUR(CurrencyUnit::Full) => false,
-            Self::DKK(CurrencyUnit::Full) => false,
-            Self::NOK(CurrencyUnit::Full) => false,
-            Self::SEK(CurrencyUnit::Full) => false,
+            Self::EUR(c_unit) => matches!(c_unit, CurrencyUnit::Fraction),
+            Self::DKK(c_unit) => matches!(c_unit, CurrencyUnit::Fraction),
+            Self::NOK(c_unit) => matches!(c_unit, CurrencyUnit::Fraction),
+            Self::SEK(c_unit) => matches!(c_unit, CurrencyUnit::Fraction),
         }
     }
 
     pub fn is_full(&self) -> bool {
         match self {
-            Self::EUR(CurrencyUnit::Full) => true,
-            Self::DKK(CurrencyUnit::Full) => true,
-            Self::NOK(CurrencyUnit::Full) => true,
-            Self::SEK(CurrencyUnit::Full) => true,
-
-            Self::EUR(CurrencyUnit::Fraction) => false,
-            Self::DKK(CurrencyUnit::Fraction) => false,
-            Self::NOK(CurrencyUnit::Fraction) => false,
-            Self::SEK(CurrencyUnit::Fraction) => false,
+            Self::EUR(c_unit) => matches!(c_unit, CurrencyUnit::Full),
+            Self::DKK(c_unit) => matches!(c_unit, CurrencyUnit::Full),
+            Self::NOK(c_unit) => matches!(c_unit, CurrencyUnit::Full),
+            Self::SEK(c_unit) => matches!(c_unit, CurrencyUnit::Full),
         }
     }
 
@@ -144,13 +129,10 @@ impl fmt::Display for Power {
 impl Power {
     pub fn new(unit_string: &str) -> UnitResult<Self> {
         // unit_string looks like this "EUR/MWh"..
-        let power_unit = &unit_string[4..];
-        if power_unit == "MWh" {
-            Ok(Self::MWh)
-        } else if power_unit == "kWh" {
-            Ok(Self::kWh)
-        } else {
-            Err(UnitError::InvalidPowerUnit)
+        match unit_string[4..].as_ref() {
+            "MWh" => Ok(Self::MWh),
+            "kWh" => Ok(Self::kWh),
+            _ => Err(UnitError::InvalidPowerUnit),
         }
     }
 
