@@ -87,7 +87,7 @@ impl Currency {
         }
     }
 
-    pub fn country_str(&self) -> String {
+    pub fn country_code(&self) -> String {
         match self {
             Self::EUR(_) => String::from("EUR"),
             Self::DKK(_) => String::from("DKK"),
@@ -96,7 +96,7 @@ impl Currency {
         }
     }
 
-    pub fn to_str(&self) -> String {
+    pub fn to_string(&self) -> String {
         match self {
             Self::EUR(CurrencyUnit::Full) => String::from("Eur."),
             Self::EUR(CurrencyUnit::Fraction) => String::from("Cent"),
@@ -114,7 +114,7 @@ impl Currency {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Power {
     MWh,
     kWh,
@@ -136,33 +136,12 @@ impl Power {
         }
     }
 
-    fn is_kwh(&self) -> bool {
-        match self {
-            Self::MWh => false,
-            Self::kWh => true,
-        }
-    }
-
     fn to_kwh(&mut self) {
         *self = Self::kWh;
     }
 
     fn to_mwh(&mut self) {
         *self = Self::MWh;
-    }
-
-    fn is_mwh(&self) -> bool {
-        match self {
-            Self::MWh => true,
-            Self::kWh => false,
-        }
-    }
-
-    pub fn to_str(&self) -> String {
-        match self {
-            Self::MWh => String::from("MWh"),
-            Self::kWh => String::from("kWh"),
-        }
     }
 }
 
@@ -231,42 +210,34 @@ fn move_comma_left(value: &mut String, moves: usize) {
 
 /// Converts the base currency to its fractional value by moving comma 2 steps to the right.
 pub fn convert_to_currency_fraction(p: &mut Price) {
-    if p.currency_unit.is_fraction() {
-        panic!("Currency already fraction unit '{}'", p.currency_unit.to_str());
+    if p.currency_unit.is_full() {
+        move_comma_right(&mut p.value, 2);
+        p.currency_unit.to_fraction();
     }
-
-    move_comma_right(&mut p.value, 2);
-    p.currency_unit.to_fraction();
 }
 
 /// Converts the currencies sub-unit to its full value by moving comma 2 steps to the left.
 pub fn convert_to_currency_full(p: &mut Price) {
-    if p.currency_unit.is_full() {
-        panic!("Currency already full unit '{}'", p.currency_unit.to_str());
+    if p.currency_unit.is_fraction() {
+        move_comma_left(&mut p.value, 2);
+        p.currency_unit.to_full();
     }
-
-    move_comma_left(&mut p.value, 2);
-    p.currency_unit.to_full();
 }
 
 /// The price is calculated to 1/1000 of its original value (1/1000M = 1k).
 pub fn convert_to_kwh(p: &mut Price) {
-    if p.power_unit.is_kwh() {
-        panic!("Power unit already kWh");
+    if p.power_unit != Power::kWh  {
+        move_comma_left(&mut p.value, 3);
+        p.power_unit.to_kwh();
     }
-
-    move_comma_left(&mut p.value, 3);
-    p.power_unit.to_kwh();
 }
 
 /// The price is calculated to 1000x of its original value (1000k = 1M).
 pub fn convert_to_mwh(p: &mut Price) {
-    if p.power_unit.is_mwh() {
-        panic!("Power unit already MWh");
+    if p.power_unit != Power::MWh {
+        move_comma_right(&mut p.value, 3);
+        p.power_unit.to_mwh();
     }
-
-    move_comma_right(&mut p.value, 3);
-    p.power_unit.to_mwh();
 }
 
 pub fn _test_unit_result(b: bool) -> UnitResult<()> {

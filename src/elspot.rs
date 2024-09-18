@@ -8,6 +8,7 @@ pub mod hourly;
 /// Prices returned comes in the form of this datatype.
 #[derive(Clone, Debug)]
 pub struct Price {
+    pub is_official: bool,
     pub region: String,
     pub from: NaiveDateTime,
     pub to: NaiveDateTime,
@@ -27,7 +28,7 @@ impl Price {
         // This function will try its best to round the floating point number to the correct value.
         // Large numbers (including negative) or numbers with many fractional digits,
         // might in rare cases be rounded the wrong way due to floating point precision errors.
-        let f = self.value.replace(',', ".");
+        let f = self.value.replace(',', ".").split_whitespace().collect::<String>();
 
         // Test number before starting.
         assert!(f.parse::<f32>().is_ok());
@@ -48,6 +49,7 @@ impl Price {
 
                 let f32_parsed = formatted.parse::<f32>().unwrap();
                 let f32_two_decimals = (f32_parsed * 100.0).round() / 100.0; // Only keep two decimal places fractions.
+
                 if self.currency_unit.is_fraction() {
                     f32_two_decimals.round() // Currency sub-unit does not use fractions, we round all the way up.
                 } else {
@@ -57,11 +59,15 @@ impl Price {
         }
     }
 
+    pub fn as_u32(&self) -> u32 {
+        self.as_f32().round() as u32
+    }
+
     pub fn price_label(&self) -> String {
         let value = self.as_f32().to_string().replace('.', ",");
-        let currency_unit = self.currency_unit.to_str();
-        let power_unit = self.power_unit.to_str();
-        let country = self.currency_unit.country_str();
+        let currency_unit = self.currency_unit.to_string();
+        let power_unit = self.power_unit.to_string();
+        let country = self.currency_unit.country_code();
 
         format!("{country} {value} {currency_unit}/{power_unit}")
     }

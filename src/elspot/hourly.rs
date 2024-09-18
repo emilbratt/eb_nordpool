@@ -122,7 +122,7 @@ struct Data {
 // This enum "Currencies" is only used to satisfy nordpools raw price data JSON structure..
 // We never use it ourselves because currency is stored within the data entry in the field "units".
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub enum Currencies {
+pub enum Currency {
     DKK,
     EUR,
     NOK,
@@ -133,7 +133,7 @@ pub enum Currencies {
 #[serde(rename_all = "camelCase")] // re-format the name "pageId" from input data to "page_id" used in the struct.
 pub struct Hourly {
     data: Data,
-    currency: Currencies,
+    currency: Currency,
     page_id: usize,
 
     #[serde(flatten)]
@@ -176,21 +176,7 @@ impl Hourly {
         }
     }
 
-    /// Prints out a list of all `regions` the price dataset.
-    ///
-    /// <pre>
-    /// Available regions:
-    /// 'SYS'
-    /// 'SE1'
-    /// 'SE2'
-    /// 'SE3'
-    /// 'SE4'
-    /// 'FI'
-    /// 'DK1'
-    /// 'DK2'
-    /// 'Oslo'
-    /// ...
-    /// </pre>
+    /// Prints all available `regions` in the price dataset.
     pub fn print_regions(&self) {
         println!("Available regions:");
         for col in &self.data.Rows[0].Columns {
@@ -199,6 +185,7 @@ impl Hourly {
         println!();
     }
 
+    /// Returns a Vec<&str> of all available `regions` in the price dataset.
     pub fn regions(&self) -> Vec<&str> {
         self.data.Rows[0].Columns
             .iter()
@@ -264,6 +251,7 @@ impl Hourly {
         }
 
         let p = Price {
+            is_official: row_entry.Columns[index_for_region].IsOfficial,
             value: row_entry.Columns[index_for_region].Value.to_string(),
             from: row_entry.StartTime,
             to: row_entry.EndTime,
@@ -294,6 +282,7 @@ impl Hourly {
             }
 
             let p = Price {
+                is_official: row.Columns[index_for_region].IsOfficial,
                 value: row.Columns[index_for_region].Value.to_string(),
                 from: row.StartTime,
                 to: row.EndTime,

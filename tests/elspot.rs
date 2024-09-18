@@ -14,7 +14,7 @@ fn eur_24h() {
 
     let mut price = data.price_for_region_at_utc_dt("Tr.heim", &utc_dt).unwrap();
     assert_eq!("5,82", price.value);
-    assert_eq!("EUR", price.currency_unit.country_str());
+    assert_eq!("EUR", price.currency_unit.country_code());
 
     price = data.price_for_region_at_utc_dt("FI", &utc_dt).unwrap();
     assert_eq!("-5,00", price.value);
@@ -87,6 +87,7 @@ fn region_time() {
 #[test]
 fn units() {
     let mut p = elspot::Price {
+        is_official: true,
         region: String::from("Oslo"), // Region not important here..
         from: common::dummy_naive_datetime(), // Time not important here..
         to: common::dummy_naive_datetime(), // Time not important here..
@@ -98,27 +99,27 @@ fn units() {
     units::convert_to_currency_fraction(&mut p);
     assert_eq!("16768", p.value);
     assert_eq!(16768f32, p.as_f32());
-    assert_eq!("Øre", p.currency_unit.to_str());
-    assert_eq!("MWh", p.power_unit.to_str());
+    assert_eq!("Øre", p.currency_unit.to_string());
+    assert_eq!("MWh", p.power_unit.to_string());
 
     units::convert_to_kwh(&mut p);
     assert_eq!("16,768", p.value);
     assert_eq!(17f32, p.as_f32());
-    assert_eq!("kWh", p.power_unit.to_str());
+    assert_eq!("kWh", p.power_unit.to_string());
 
     units::convert_to_currency_full(&mut p);
     assert_eq!("0,16768", p.value);
     assert_eq!(0.17f32, p.as_f32());
-    assert_eq!("Kr.", p.currency_unit.to_str());
-    assert_eq!("kWh", p.power_unit.to_str());
+    assert_eq!("Kr.", p.currency_unit.to_string());
+    assert_eq!("kWh", p.power_unit.to_string());
 
     units::convert_to_mwh(&mut p);
     assert_eq!(167.68f32, p.as_f32());
     assert_eq!("167,68", p.value);
-    assert_eq!("MWh", p.power_unit.to_str());
+    assert_eq!("MWh", p.power_unit.to_string());
 
     p.value = String::from("10,505");
     units::convert_to_currency_fraction(&mut p);
     assert_eq!(1051f32, p.as_f32());
-    assert_eq!("Øre", p.currency_unit.to_str());
+    assert_eq!("Øre", p.currency_unit.to_string());
 }

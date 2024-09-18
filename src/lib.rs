@@ -40,7 +40,7 @@
 //!     println!("Price for Oslo now: {}", p.price_label());
 //! }
 //!
-//! // Get price for specific timestamp (must be in Utc)
+//! // Get price for specific timestamp (must be in Utc).
 //! let utc_dt = region_time::utc_with_ymd_and_hms(2024, 6, 20, 11, 0, 0);
 //! let p = data.price_for_region_at_utc_dt("Oslo", &utc_dt);
 //! // NOTE: this gives you the price for 13:00 local time (Oslo is 2 hours ahead during CEST..).
@@ -52,8 +52,24 @@
 //! // Get all prices for a specific region (always in ascending order starting at time 00:00).
 //! let prices = data.all_prices_for_region("Oslo");
 //!
-//! // Print all price data.
-//! for p in prices.iter() {
+//! // Convert currency-units and power-units.
+//! let mut prices = data.all_prices_for_region("Oslo");
+//! let mut p = &mut prices[0];
+//! units::convert_to_currency_fraction(&mut p); // Converts "160,00" to "16000" e.g. to cents.
+//! units::convert_to_currency_full(&mut p); // Same as above, but the other way around.
+//! units::convert_to_kwh(&mut p); // Converts from MWh to kWh (also adjusts the price value).
+//! units::convert_to_mwh(&mut p); // Same as above, but the other way around.
+//!
+//! // It is often more reasonable to get the price formated as for example "øre/kWh".
+//! // Lets do it for all prices..
+//! let mut prices = data.all_prices_for_region("Oslo");
+//! for i in 0..prices.len() {
+//!     units::convert_to_currency_fraction(&mut prices[i]);
+//!     units::convert_to_kwh(&mut prices[i]);
+//! }
+//! for p in &prices {
+//!     assert!(p.currency_unit.is_fraction());
+//!     assert_eq!(p.power_unit, units::Power::kWh);
 //!     println!("{}", p);
 //! }
 //!
@@ -66,16 +82,10 @@
 //! let p = &prices[8];
 //! println!("{}", p.price_label());
 //!
-//! // Get price as f32.
+//! // Get price as number data types f32.
 //! let p = &prices[8];
-//! let p_as_float = p.as_f32();
-//!
-//! // Convert currency-units and power-units.
-//! let mut p = prices[3].clone();
-//! units::convert_to_currency_fraction(&mut p); // Converts "160,00" to "16000" e.g. to cents.
-//! units::convert_to_currency_full(&mut p); // Same as above, but the other way around.
-//! units::convert_to_kwh(&mut p); // Converts from MWh to kWh (also adjusts the price value).
-//! units::convert_to_mwh(&mut p); // Same as above, but the other way around.
+//! let f: f32 = p.as_f32();
+//! let u: u32 = p.as_u32();
 //! ```
 
 #![allow(non_snake_case)] // Struct naming is in "PascalCase" to map directly with data from nordpool..
