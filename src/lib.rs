@@ -12,6 +12,13 @@
 //! let data = elspot::hourly::from_nordpool_nok().unwrap();
 //! // ..this http request is currently blocking, but this might change in the future.
 //!
+//! // Check if prices are official (if not, then prices might change).
+//! if data.prices_are_official() {
+//!     println!("Prices are official!");
+//! } else {
+//!     println!("Maybe wait a little bit and then try again?");
+//! }
+//!
 //! // Gives you the actual date for the prices in YYYY-MM-DD format (chrono's NaiveDate type).
 //! data.date()
 //!
@@ -35,57 +42,63 @@
 //!     // ..do something
 //! }
 //!
-//! // Price now for specific region.
-//! if let Ok(p) = data.price_now_for_region("Oslo") {
-//!     println!("Price for Oslo now: {}", p.price_label());
-//! }
-//!
-//! // Get price for specific timestamp (must be in Utc).
-//! let utc_dt = region_time::utc_with_ymd_and_hms(2024, 6, 20, 11, 0, 0);
-//! let p = data.price_for_region_at_utc_dt("Oslo", &utc_dt);
-//! // NOTE: this gives you the price for 13:00 local time (Oslo is 2 hours ahead during CEST..).
-//! match p {
-//!     Ok(p) => println!("{}", p),
-//!     Err(e) => println!("{}", e),
-//! }
-//!
 //! // Get all prices for a specific region (always in ascending order starting at time 00:00).
-//! let prices = data.all_prices_for_region("Oslo");
+//! let prices = data.extract_prices_for_region("Oslo");
 //!
 //! // Convert currency-units and power-units.
-//! let mut prices = data.all_prices_for_region("Oslo");
+//! let mut prices = data.extract_prices_for_region("Oslo");
 //! let mut p = &mut prices[0];
 //! units::convert_to_currency_fraction(&mut p); // Converts "160,00" to "16000" e.g. to cents.
 //! units::convert_to_currency_full(&mut p); // Same as above, but the other way around.
 //! units::convert_to_kwh(&mut p); // Converts from MWh to kWh (also adjusts the price value).
 //! units::convert_to_mwh(&mut p); // Same as above, but the other way around.
 //!
-//! // It is often more reasonable to get the price formated as for example "øre/kWh".
-//! // Lets do it for all prices..
-//! let mut prices = data.all_prices_for_region("Oslo");
-//! for i in 0..prices.len() {
-//!     units::convert_to_currency_fraction(&mut prices[i]);
-//!     units::convert_to_kwh(&mut prices[i]);
+//! // Convert to smaller units (will modify every value in "Price.value").
+//! let mut prices = data.extract_prices_for_region("Oslo");
+//! for mut p in prices.iter_mut() {
+//!     // To fractional currency unit (from for example 'Kr.' to 'Øre').
+//!     units::convert_to_currency_fraction(&mut p);
+//!     // To smaller power unit (from "MWh" to "kWh").
+//!     units::convert_to_kwh(&mut p);
+//!
+//!     // And back again.
+//!     // units::convert_to_currency_full(&mut p);
+//!     // units::convert_to_mwh(&mut p);
 //! }
-//! for p in &prices {
+//! for p in prices.iter() {
 //!     assert!(p.currency_unit.is_fraction());
-//!     assert_eq!(p.power_unit, units::Power::kWh);
-//!     println!("{}", p);
+//!     assert!(p.power_unit.is_kwh());
+//!     println!("{}", p.price_label());
 //! }
 //!
-//! // Print one price.
-//! let p = &prices[8];
-//! let (region, from, to, label) = (&p.region, &p.from, &p.to, &p.price_label());
-//! println!("Price for {region} between {from} and {to} is {label}");
+//! // Get time window for a price (to and from). Uses Chrono datetime types.
+//! let p = &prices[0];
+//! // DateTime with the same timezone as the region for the prices.
+//! let (from, to) = p.from_to(); // (from, to) as (DateTime<Tz>, DateTime<Tz>)
+//! // Adjusted for Utc.
+//! let (from_utc, to_utc) = p.from_to_utc(); // (from, to) as (DateTime<Utc>, DateTime<Utc>)
+//! // Adjusted for any supported region, for example Finland using region code "FI".
+//! let (from_r, to_r) = p.from_to_region("FI"); // (from, to) as (DateTime<Tz>, DateTime<Tz>)
+//! // Adjusted for any timezone, for example Los Angeles using chrono_tz's tz type.
+//! use chrono_tz::America::Los_Angeles;
+//! let (from_la, to_la) = p.from_to_tz(Los_Angeles);
 //!
 //! // Pretty print price (label like). Looks like this: "NOK 167,68 Kr./MWh".
 //! let p = &prices[8];
 //! println!("{}", p.price_label());
 //!
-//! // Get price as number data types f32.
+//! // Get price as numeric data types.
 //! let p = &prices[8];
 //! let f: f32 = p.as_f32();
-//! let u: u32 = p.as_u32();
+//! let i: i32 = p.as_i32();
+//!
+//! // Just get all prices for all regions in a 2D Array.
+//! let all_prices = data.extract_all_prices();
+//! for prices in all_prices.iter() {
+//!     for p in prices.iter() {
+//!         println!("Time: {} - {} ({})", p.hour(), p.price_label(), p.region)
+//!     }
+//! }
 //! ```
 
 #![allow(non_snake_case)] // Struct naming is in "PascalCase" to map directly with data from nordpool..

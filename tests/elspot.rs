@@ -1,56 +1,99 @@
 use std::fs;
-use eb_nordpool::{elspot, error, region_time, units};
-mod common;
+
+use eb_nordpool::{elspot, error::HourlyError, units};
 
 #[test]
 fn eur_24h() {
-    // Most of the testing happens here with the standard 24h. data.
+    // testing standard 24h days data.
     let data = elspot::hourly::from_file("./tests/data/EUR_24H.json").unwrap();
-
+    assert!(data.prices_are_official());
     assert!(data.has_region("Tr.heim"));
-    assert!(!data.prices_are_today_for_region("Tr.heim"));
+    assert!(data.has_region("SE1"));
+    assert!(data.has_region("FI"));
+    assert!(data.has_region("BE"));
 
-    let utc_dt = common::utc_dt_for_eur_24_hour();
+    let prices = data.extract_prices_for_region("Tr.heim");
+    let p = &prices[1];
+    assert_eq!("5,82", p.value);
+    assert_eq!("EUR", p.currency_unit.country_code());
 
-    let mut price = data.price_for_region_at_utc_dt("Tr.heim", &utc_dt).unwrap();
-    assert_eq!("5,82", price.value);
-    assert_eq!("EUR", price.currency_unit.country_code());
+    let prices = data.extract_prices_for_region("FI");
+    let p = &prices[2];
+    assert_eq!("-5,00", p.value);
 
-    price = data.price_for_region_at_utc_dt("FI", &utc_dt).unwrap();
-    assert_eq!("-5,00", price.value);
-
-    for region in data.regions() {
-        let prices = data.all_prices_for_region(region);
-        assert!(prices.len() == 24);
+    let prices_all = data.extract_all_prices();
+    for prices in prices_all {
+        assert_eq!(prices.len(), 24);
+        for p in prices {
+            let (from, _) = p.from_to();
+            if p.region != "SYS" {
+                assert_eq!(data.date(), from.date_naive());
+            }
+        }
     }
 }
 
 #[test]
 fn nok_25h() {
-    // Edge case testing when we have 25 hours in a day.
+    // Test when we have 25 hours in a day.
     let data = elspot::hourly::from_file("./tests/data/NOK_25H.json").unwrap();
 
-    let utc_dt = common::utc_dt_for_nok_25_hour();
+    let price = data.extract_prices_for_region("Tr.heim");
+    let p = &price[3];
+    assert_eq!("167,66", p.value);
 
-    let price = data.price_for_region_at_utc_dt("Tr.heim", &utc_dt).unwrap();
-    assert_eq!("167,66", price.value);
-
-    let prices = data.all_prices_for_region("Oslo");
-    assert!(prices.len() == 25);
+    for region in data.regions() {
+        match region {
+            // Test data has no prices for these regions..
+            "AT" | "BE" | "DE-LU" | "FR" |"NL" => {
+                let prices = data.extract_prices_for_region(region);
+                assert_eq!(prices.len(), 0);
+            },
+            _ => {
+                let prices = data.extract_prices_for_region(region);
+                assert_eq!(prices.len(), 25);
+                if region != "SYS" {
+                    for p in prices {
+                        let (from, _) = p.from_to();
+                        assert_eq!(data.date(), from.date_naive());
+                    }
+                }
+             }
+        }
+    }
 }
 
 #[test]
 fn nok_23h() {
-    // Edge case testing when we have 23 hours in a day.
+    // Test when we have 23 hours in a day.
     let data = elspot::hourly::from_file("./tests/data/NOK_23H.json").unwrap();
+    assert!(!data.prices_are_official());
 
-    let utc_dt = common::utc_dt_for_nok_23_hour();
+    let prices = data.extract_prices_for_region("Oslo");
+    assert_eq!(prices.len(), 23);
+    let p = &prices[0];
+    let (from, to) = p.from_to();
+    assert_eq!(from.to_rfc3339(), "2023-03-26T00:00:00+01:00");
+    assert_eq!(to.to_rfc3339(), "2023-03-26T01:00:00+01:00");
 
-    let price = data.price_for_region_at_utc_dt("Oslo", &utc_dt).unwrap();
-    assert_eq!("868,18", price.value);
-
-    let prices = data.all_prices_for_region("Oslo");
-    assert!(prices.len() == 23);
+    let data = elspot::hourly::from_file("./tests/data/NOK_23H.json").unwrap();
+    for region in data.regions() {
+        match region {
+            // Test data has no prices for these regions..
+            "AT" | "BE" | "DE-LU" | "FR" |"NL" => {
+                let prices = data.extract_prices_for_region(region);
+                assert_eq!(prices.len(), 0);
+            },
+            _ => {
+                let prices = data.extract_prices_for_region(region);
+                assert_eq!(prices.len(), 23);
+                for p in prices {
+                    let (from, _) = p.from_to();
+                    assert_eq!(data.date(), from.date_naive());
+                }
+            }
+        }
+    }
 }
 
 #[test]
@@ -63,12 +106,12 @@ fn hourly_invalid_json() {
     let data = elspot::hourly::from_json(&json_str);
     match data {
         Ok(_) => panic!(),
-        Err(e) => assert_eq!(e, error::HourlyError::InvalidJSON),
+        Err(e) => assert!(matches!(e, HourlyError::InvalidJSON)),
     }
 }
 
 #[test]
-fn hourly_to_string() {
+fn hourly_to_json_string() {
     let data = elspot::hourly::from_file("./tests/data/EUR_24H.json").unwrap();
 
     // Save data to a string (serialized json).
@@ -79,47 +122,44 @@ fn hourly_to_string() {
 }
 
 #[test]
-fn region_time() {
-    // Just run the function. It ensures it will not be altered without a test failure.
-    region_time::utc_with_ymd_and_hms(2024, 6, 20, 11, 0, 0);
-}
-
-#[test]
 fn units() {
-    let mut p = elspot::Price {
-        is_official: true,
-        region: String::from("Oslo"), // Region not important here..
-        from: common::dummy_naive_datetime(), // Time not important here..
-        to: common::dummy_naive_datetime(), // Time not important here..
-        value: String::from("0167,680"), // Add trailing zero, we should be able to handle it.
-        currency_unit: units::Currency::NOK(units::CurrencyUnit::Full),
-        power_unit: units::Power::MWh,
-    };
+    let data = elspot::hourly::from_file("./tests/data/EUR_24H.json").unwrap();
+
+    let mut prices = data.extract_prices_for_region("Oslo");
+    let mut p = &mut prices[1];
+    p.value = String::from("0167,680"); // Change to a value with trailing zero, we should be able to handle it.
 
     units::convert_to_currency_fraction(&mut p);
     assert_eq!("16768", p.value);
     assert_eq!(16768f32, p.as_f32());
-    assert_eq!("Øre", p.currency_unit.to_string());
+    assert_eq!("Cent", p.currency_unit.to_string());
     assert_eq!("MWh", p.power_unit.to_string());
 
     units::convert_to_kwh(&mut p);
     assert_eq!("16,768", p.value);
-    assert_eq!(17f32, p.as_f32());
+    assert_eq!(17_f32, p.as_f32());
     assert_eq!("kWh", p.power_unit.to_string());
 
     units::convert_to_currency_full(&mut p);
     assert_eq!("0,16768", p.value);
-    assert_eq!(0.17f32, p.as_f32());
-    assert_eq!("Kr.", p.currency_unit.to_string());
+    assert_eq!(0.17_f32, p.as_f32());
+    assert_eq!("Eur.", p.currency_unit.to_string());
     assert_eq!("kWh", p.power_unit.to_string());
 
     units::convert_to_mwh(&mut p);
-    assert_eq!(167.68f32, p.as_f32());
+    assert_eq!(167.68_f32, p.as_f32());
     assert_eq!("167,68", p.value);
     assert_eq!("MWh", p.power_unit.to_string());
 
     p.value = String::from("10,505");
     units::convert_to_currency_fraction(&mut p);
-    assert_eq!(1051f32, p.as_f32());
-    assert_eq!("Øre", p.currency_unit.to_string());
+    assert_eq!(1051_f32, p.as_f32());
+    assert_eq!("Cent", p.currency_unit.to_string());
+
+    p.value = String::from("10,5");
+    assert_eq!(11_i32, p.as_i32());
+    p.value = String::from("-10,5");
+    assert_eq!(-11_i32, p.as_i32());
+    p.value = String::from("-10,49");
+    assert_eq!(-10_i32, p.as_i32());
 }

@@ -3,7 +3,7 @@ use core::result::Result;
 
 pub type HourlyResult<T> = Result<T, HourlyError>;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Debug)]
 pub enum HourlyError {
     InvalidJSON,
     InvalidPageID,
@@ -39,8 +39,7 @@ pub type UnitResult<T> = Result<T, UnitError>;
 
 #[derive(Debug)]
 pub enum UnitError {
-    InvalidCurrencyUnit,
-    InvalidPowerUnit,
+    InvalidUnitstring,
 }
 
 impl fmt::Display for UnitError {

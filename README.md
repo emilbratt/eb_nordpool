@@ -2,7 +2,9 @@
 
 Rust library for extracting elspot prices from nordpool.
 
-This crate is still under early developement, documentation to come in the future..
+[Documentation](https://docs.rs/eb_nordpool/latest/eb_nordpool/)
+
+* documentation still in the works..
 
 Run tests.
 

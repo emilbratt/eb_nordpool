@@ -42,12 +42,12 @@ impl fmt::Display for Currency {
 impl Currency {
     pub fn new(unit_string: &str) -> UnitResult<Self> {
         // unit_string looks like this "EUR/MWh"..
-        match unit_string[..3].as_ref() {
-            "EUR" => Ok(Self::EUR(CurrencyUnit::Full)),
-            "DKK" => Ok(Self::DKK(CurrencyUnit::Full)),
-            "NOK" => Ok(Self::NOK(CurrencyUnit::Full)),
-            "SEK" => Ok(Self::SEK(CurrencyUnit::Full)),
-            _ => Err(UnitError::InvalidCurrencyUnit),
+        match unit_string {
+            "EUR/MWh" => Ok(Self::EUR(CurrencyUnit::Full)),
+            "DKK/MWh" => Ok(Self::DKK(CurrencyUnit::Full)),
+            "NOK/MWh" => Ok(Self::NOK(CurrencyUnit::Full)),
+            "SEK/MWh" => Ok(Self::SEK(CurrencyUnit::Full)),
+            _ => Err(UnitError::InvalidUnitstring),
         }
     }
 
@@ -108,13 +108,13 @@ impl Currency {
             Self::NOK(CurrencyUnit::Fraction) => String::from("Øre"),
 
             Self::SEK(CurrencyUnit::Full) => String::from("Kr."),
-            Self::SEK(CurrencyUnit::Fraction) => String::from("öre"),
+            Self::SEK(CurrencyUnit::Fraction) => String::from("Öre"),
         }
     }
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub enum Power {
     MWh,
     kWh,
@@ -132,7 +132,7 @@ impl Power {
         match unit_string[4..].as_ref() {
             "MWh" => Ok(Self::MWh),
             "kWh" => Ok(Self::kWh),
-            _ => Err(UnitError::InvalidPowerUnit),
+            _ => Err(UnitError::InvalidUnitstring),
         }
     }
 
@@ -142,6 +142,14 @@ impl Power {
 
     fn to_mwh(&mut self) {
         *self = Self::MWh;
+    }
+
+    pub fn is_mwh(&self) -> bool {
+        matches!(self, Self::MWh)
+    }
+
+    pub fn is_kwh(&self) -> bool {
+        matches!(self, Self::kWh)
     }
 }
 
@@ -226,7 +234,7 @@ pub fn convert_to_currency_full(p: &mut Price) {
 
 /// The price is calculated to 1/1000 of its original value (1/1000M = 1k).
 pub fn convert_to_kwh(p: &mut Price) {
-    if p.power_unit != Power::kWh  {
+    if p.power_unit.is_mwh() {
         move_comma_left(&mut p.value, 3);
         p.power_unit.to_kwh();
     }
@@ -234,15 +242,16 @@ pub fn convert_to_kwh(p: &mut Price) {
 
 /// The price is calculated to 1000x of its original value (1000k = 1M).
 pub fn convert_to_mwh(p: &mut Price) {
-    if p.power_unit != Power::MWh {
+    if p.power_unit.is_kwh() {
         move_comma_right(&mut p.value, 3);
         p.power_unit.to_mwh();
     }
 }
 
-pub fn _test_unit_result(b: bool) -> UnitResult<()> {
-    match b {
-        true => Ok(()),
-        false => Err(UnitError::InvalidCurrencyUnit),
+pub fn test_unit_string(unit_string: &str) -> UnitResult<()> {
+    if EXPECTED_UNIT_SRINGS.contains(&unit_string) {
+        Ok(())
+    } else {
+        Err(UnitError::InvalidUnitstring)
     }
 }

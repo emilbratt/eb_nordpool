@@ -7,16 +7,14 @@ use crate::error::{
     RegionError,
     RegionResult,
 };
-use crate::region_time;
+use crate::region_time::{dt_tz_from_naive_dt, PriceHours};
 use crate::units;
 
 use chrono::{
     DateTime,
     NaiveDate,
     NaiveDateTime,
-    Timelike,
-    Utc,
-    Duration
+    Duration,
 };
 use chrono_tz::Tz;
 
@@ -149,10 +147,15 @@ impl Hourly {
                     return Err(HourlyError::InvalidPageID);
                 }
 
-                // The 'unit_string' should be identical to one of the strings in units::EXPECTED_UNIT_SRINGS.
-                let unit_string = data.data.Units[0].as_ref();
-                if !units::EXPECTED_UNIT_SRINGS.contains(&unit_string) {
-                    return Err(HourlyError::InvalidUnitstring);
+                // Check if 'unit_string' is in the array.
+                if data.data.Units.is_empty() {
+                    panic!("No unit string in data.Units");
+                }
+
+                // Test 'unit_string' to ensure it is valid.
+                let unit_string = &data.data.Units[0];
+                if let Err(e) = units::test_unit_string(unit_string) {
+                    panic!("{}, found value '{}' in data.Units[0]", e, unit_string);
                 }
 
                 Ok(data)
@@ -176,6 +179,18 @@ impl Hourly {
         }
     }
 
+    /// Check if prices are official (if not, then prices might change).
+    pub fn prices_are_official(&self) -> bool {
+        for row in self.data.Rows.iter() {
+            for col in row.Columns.iter() {
+                if !col.IsOfficial {
+                    return false;
+                }
+            }
+        }
+
+        true
+    }
     /// Prints all available `regions` in the price dataset.
     pub fn print_regions(&self) {
         println!("Available regions:");
@@ -207,94 +222,61 @@ impl Hourly {
         self.data.DataStartdate.date()
     }
 
-    pub fn prices_are_today_for_region(&self, region: &str) -> bool {
-        self.date() == region_time::region_dt_now_from_region(region).date_naive()
-    }
-
-    pub fn price_for_region_at_utc_dt(&self, region: &str, utc_dt: &DateTime<Utc>) -> HourlyResult<Price> {
-        let region_dt: DateTime<Tz> = region_time::region_dt_from_utc_dt(region, utc_dt);
-
+    pub fn extract_prices_for_region(&self, region: &str) -> Vec<Price> {
         let index_for_region = self.col_index_for_region(region).unwrap_or_else(|e| panic!("{}", e));
 
-        if self.data.DataStartdate.date() != region_dt.date_naive() {
-            return Err(HourlyError::PriceDateMismatch);
-        }
-
-        let row_entries: Vec<&RowEntry> = self.data.Rows
+        let _prices: Vec<&ColEntry> = self.data.Rows
             .iter()
-            .filter(|v| !v.IsExtraRow && v.StartTime.hour() == region_dt.hour())
+            .filter(|&row| !&row.IsExtraRow && &row.Columns[index_for_region].Value != "-")
+            .map(|row| &row.Columns[index_for_region])
             .collect();
 
-        // Find the row holding the prices for our selected time (all regions are included here).
-        let row_entry: &RowEntry;
-
-        match row_entries.len() {
-            0 => return Err(HourlyError::PriceHourMismatch),
-            1 => {
-                // 99.9% of the time, this block will match because we only have one entry for a specific time.
-                row_entry = row_entries[0];
-            }
-            2 => {
-                // This happens on rare occasions.
-                // The datetime moves from CEST to CET e.g. from summer time to winter time.
-                // This means that we have a 25 hour day AND the hour now must be 2 o'clock since we have two entries..
-                // What happens is we end up with two possible times (2 o'clock CEST and 2 o'clock CET).
-                // To disambiguate we add 1 hour to the datetime and see if this moves us to 3 o'clock.
-                // If 2 then we are still on CEST, if 3 we are on CET.
-                match (region_dt + Duration::hours(1)).hour() {
-                    3 => row_entry = row_entries[1],
-                    2 => row_entry = row_entries[0],
-                    _ => return Err(HourlyError::PriceHourMismatchCESTToCET),
-                }
-            }
-            _ => return Err(HourlyError::PriceFilteredRowsExceededTwo),
+        if _prices.is_empty() {
+            return vec![];
         }
 
-        let p = Price {
-            is_official: row_entry.Columns[index_for_region].IsOfficial,
-            value: row_entry.Columns[index_for_region].Value.to_string(),
-            from: row_entry.StartTime,
-            to: row_entry.EndTime,
-            region: region.to_string(),
-            currency_unit: units::Currency::new(&self.data.Units[0]).unwrap_or_else(|e| panic!("{}", e)),
-            power_unit: units::Power::new(&self.data.Units[0]).unwrap_or_else(|e| panic!("{}", e)),
+        let price_hours = PriceHours::new(self.date(), region);
+        let unit_string = &self.data.Units[0];
+        let mut start_time: DateTime<Tz> = dt_tz_from_naive_dt(self.data.Rows[0].StartTime, region);
+        let mut end_time: DateTime<Tz> = dt_tz_from_naive_dt(self.data.Rows[0].EndTime, region);
+        let mut prices_region: Vec<Price> = vec![];
+        match price_hours {
+            PriceHours::TwentyThree => assert_eq!(price_hours.as_int(), _prices.len()),
+            PriceHours::TwentyFive => assert_eq!(price_hours.as_int(), _prices.len()),
+            // PriceHours::TwentyFour if _prices.len() != 24 => assert_eq!(_prices.len(), 25),
+            _ => assert_eq!(_prices.len() as u8, 24),
         };
 
-        Ok(p)
-    }
-
-    pub fn price_now_for_region(&self, region: &str) -> HourlyResult<Price> {
-        let utc_now = Utc::now();
-        self.price_for_region_at_utc_dt(region, &utc_now)
-    }
-
-    pub fn all_prices_for_region(&self, region: &str) -> Vec<Price> {
-        let mut prices: Vec<Price> = vec![];
-
-        let index_for_region = self.col_index_for_region(region).unwrap_or_else(|e| panic!("{}", e));
-
-        for row in self.data.Rows.iter() {
-            if row.IsExtraRow {
-                continue; // Extra rows are reserved for aggregate values such as min, max, avg etc..
-            }
-            if row.StartTime.hour() == 2 && row.Columns[index_for_region].Value == "-" {
-                continue; // Moving from CET to CEST and the nordpool data includes an empty value which we skip.
+        for price in _prices {
+            if region != "SYS" {
+                assert_eq!(self.date(), start_time.date_naive());
             }
 
             let p = Price {
-                is_official: row.Columns[index_for_region].IsOfficial,
-                value: row.Columns[index_for_region].Value.to_string(),
-                from: row.StartTime,
-                to: row.EndTime,
+                value: price.Value.to_string(),
+                from: start_time.to_utc(),
+                to: end_time.to_utc(),
                 region: region.to_string(),
-                currency_unit: units::Currency::new(&self.data.Units[0]).unwrap_or_else(|e| panic!("{}", e)),
-                power_unit: units::Power::new(&self.data.Units[0]).unwrap_or_else(|e| panic!("{}", e)),
+                currency_unit: units::Currency::new(unit_string).unwrap_or_else(|e| panic!("{}", e)),
+                power_unit: units::Power::new(unit_string).unwrap_or_else(|e| panic!("{}", e)),
             };
 
-            prices.push(p);
+            prices_region.push(p);
+
+            start_time += Duration::hours(1);
+            end_time += Duration::hours(1);
         }
 
-        prices
+        prices_region
+    }
+
+    pub fn extract_all_prices(&self) -> Vec<Vec<Price>> {
+        let mut prices_regions: Vec<Vec<Price>> = vec![];
+        for region in self.regions() {
+            prices_regions.push(self.extract_prices_for_region(region));
+        }
+
+        prices_regions
     }
 
     pub fn to_json_string(&self) -> String {
