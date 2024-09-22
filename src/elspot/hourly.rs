@@ -19,7 +19,7 @@ use chrono::{
 use chrono_tz::Tz;
 
 use serde::{Deserialize, Serialize};
-use serde_json::{self, Map, Value};
+use serde_json;
 
 use reqwest;
 
@@ -29,9 +29,7 @@ const NORDPOOL_URL_NOK: &str = "https://www.nordpoolgroup.com/api/marketdata/pag
 const NORDPOOL_URL_SEK: &str = "https://www.nordpoolgroup.com/api/marketdata/page/10?currency=SEK";
 
 pub fn from_json(json_str: &str) -> HourlyResult<Hourly> {
-    let hourly = Hourly::new(json_str)?;
-
-    Ok(hourly)
+    Hourly::new(json_str)
 }
 
 pub fn from_file(path: &str) -> HourlyResult<Hourly> {
@@ -67,64 +65,39 @@ pub fn from_nordpool_sek() -> HourlyResult<Hourly> {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct ColEntry {
     Index: u8,
-    Scale: u8,
-    SecondaryValue: Option<String>,
-    IsDominatingDirection: bool,
-    IsValid: bool,
-    IsAdditionalData: bool,
-    Behavior: u8,
+    IsOfficial: bool,
     Name: String,
     Value: String,
-    GroupHeader: Option<String>,
-    DisplayNegativeValueInBlue: bool,
-    CombinedName: String,
-    DateTimeForData: NaiveDateTime,
-    DisplayName: String,
-    DisplayNameOrDominatingDirection: String,
-    IsOfficial: bool,
-    UseDashDisplayStyle: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct RowEntry {
     Columns: Vec<ColEntry>,
-    Name: String,
-    StartTime: NaiveDateTime,
     EndTime: NaiveDateTime,
-    DateTimeForData: NaiveDateTime,
-    DayNumber: u16,
-    StartTimeDate: NaiveDateTime,
     IsExtraRow: bool,
-    IsNtcRow: bool,
-    EmptyValue: String,
-    Parent: Option<Value>,
+    StartTime: NaiveDateTime,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct Data {
-    Rows: Vec<RowEntry>,
-    DataStartdate: NaiveDateTime,
-    DataEnddate: NaiveDateTime,
-    MinDateForTimeScale: NaiveDateTime,
-    DateUpdated: NaiveDateTime,
-    LatestResultDate: NaiveDateTime,
     ContainsPreliminaryValues: bool,
-    ContainsExchangeRates: bool,
-    CombinedHeadersEnabled: bool,
-    DataType: i16,
-    TimeZoneInformation: i16,
+    DataStartdate: NaiveDateTime,
+    Rows: Vec<RowEntry>,
     Units: Vec<String>,
-    IsDivided: bool,
 }
 
-// This enum "Currencies" is only used to satisfy nordpools raw price data JSON structure..
-// We never use it ourselves because currency is stored within the data entry in the field "units".
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub enum Currency {
+enum Currency {
     DKK,
     EUR,
     NOK,
     SEK,
+}
+
+impl fmt::Display for Currency {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -133,9 +106,6 @@ pub struct Hourly {
     data: Data,
     currency: Currency,
     page_id: usize,
-
-    #[serde(flatten)]
-    extra: Map<String, Value>,
 }
 
 impl Hourly {
@@ -179,18 +149,11 @@ impl Hourly {
         }
     }
 
-    /// Check if prices are official (if not, then prices might change).
-    pub fn prices_are_official(&self) -> bool {
-        for row in self.data.Rows.iter() {
-            for col in row.Columns.iter() {
-                if !col.IsOfficial {
-                    return false;
-                }
-            }
-        }
-
-        true
+    /// Check if prices are not finite.
+    pub fn is_preliminary(&self) -> bool {
+        self.data.ContainsPreliminaryValues
     }
+
     /// Prints all available `regions` in the price dataset.
     pub fn print_regions(&self) {
         println!("Available regions:");
@@ -216,6 +179,10 @@ impl Hourly {
             .find(|v| v.Name == region);
 
         res.is_some()
+    }
+
+    pub fn currency(&self) -> String {
+        self.currency.to_string()
     }
 
     pub fn date(&self) -> NaiveDate {
@@ -244,7 +211,7 @@ impl Hourly {
             PriceHours::TwentyThree => assert_eq!(price_hours.as_int(), _prices.len()),
             PriceHours::TwentyFive => assert_eq!(price_hours.as_int(), _prices.len()),
             // PriceHours::TwentyFour if _prices.len() != 24 => assert_eq!(_prices.len(), 25),
-            _ => assert_eq!(_prices.len() as u8, 24),
+            _ => assert_eq!(_prices.len(), 24),
         };
 
         for price in _prices {
@@ -256,6 +223,7 @@ impl Hourly {
                 value: price.Value.to_string(),
                 from: start_time.to_utc(),
                 to: end_time.to_utc(),
+                date: self.data.DataStartdate.date(),
                 region: region.to_string(),
                 currency_unit: units::Currency::new(unit_string).unwrap_or_else(|e| panic!("{}", e)),
                 power_unit: units::Power::new(unit_string).unwrap_or_else(|e| panic!("{}", e)),

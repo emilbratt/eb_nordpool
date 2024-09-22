@@ -12,14 +12,13 @@
 //! let data = elspot::hourly::from_nordpool_nok().unwrap();
 //! // ..this http request is currently blocking, but this might change in the future.
 //!
-//! // Check if prices are official (if not, then prices might change).
-//! if data.prices_are_official() {
-//!     println!("Prices are official!");
-//! } else {
-//!     println!("Maybe wait a little bit and then try again?");
+//! // Check if prices are not finite (preliminary values means they might change).
+//! if data.is_preliminary() {
+//!     println!("prices are preliminary!");
 //! }
+//! // ..weekends might always contain preliminary values..
 //!
-//! // Gives you the actual date for the prices in YYYY-MM-DD format (chrono's NaiveDate type).
+//! // Date for prices, formatted as "YYYY-MM-DD" (chrono's NaiveDate type).
 //! data.date()
 //!
 //! // Save data to file.
@@ -34,26 +33,30 @@
 //! // Print out all available regions. This is convenient for finding a specific region.
 //! data.print_regions();
 //!
-//! // Get all regions in a Vec<&str>, nice if you want to do something with all regions.
+//! // All available regions in a Vec<&str>.
 //! let regions = data.regions();
 //!
-//! // Check if a region exists in dataset.
+//! // Check if region exists in dataset.
 //! if data.has_region("Oslo") {
 //!     // ..do something
 //! }
 //!
-//! // Get all prices for a specific region (always in ascending order starting at time 00:00).
+//! // Get all prices for specific region (always in time ascending order starting at 00:00).
 //! let prices = data.extract_prices_for_region("Oslo");
 //!
-//! // Convert currency-units and power-units.
-//! let mut prices = data.extract_prices_for_region("Oslo");
-//! let mut p = &mut prices[0];
-//! units::convert_to_currency_fraction(&mut p); // Converts "160,00" to "16000" e.g. to cents.
-//! units::convert_to_currency_full(&mut p); // Same as above, but the other way around.
-//! units::convert_to_kwh(&mut p); // Converts from MWh to kWh (also adjusts the price value).
-//! units::convert_to_mwh(&mut p); // Same as above, but the other way around.
+//! // Get time window (from and to) for a price in chrono's datetime type.
+//! let p = &prices[0];
+//! // DateTime with the same timezone as the region for the prices.
+//! let (from, to) = p.from_to(); // (from, to) as (DateTime<Tz>, DateTime<Tz>)
+//! // Adjusted for Utc.
+//! let (from_utc, to_utc) = p.from_to_utc(); // (from, to) as (DateTime<Utc>, DateTime<Utc>)
+//! // Adjusted for region, for example Finland using region code "FI".
+//! let (from_r, to_r) = p.from_to_region("FI"); // (from, to) as (DateTime<Tz>, DateTime<Tz>)
+//! // Adjusted for any timezone, for example Los Angeles using chrono_tz's tz type.
+//! use chrono_tz::America::Los_Angeles;
+//! let (from_la, to_la) = p.from_to_tz(Los_Angeles);
 //!
-//! // Convert to smaller units (will modify every value in "Price.value").
+//! // Convert to other units (includes changing price value to accommodate for new units).
 //! let mut prices = data.extract_prices_for_region("Oslo");
 //! for mut p in prices.iter_mut() {
 //!     // To fractional currency unit (from for example 'Kr.' to 'Øre').
@@ -70,18 +73,6 @@
 //!     assert!(p.power_unit.is_kwh());
 //!     println!("{}", p.price_label());
 //! }
-//!
-//! // Get time window for a price (to and from). Uses Chrono datetime types.
-//! let p = &prices[0];
-//! // DateTime with the same timezone as the region for the prices.
-//! let (from, to) = p.from_to(); // (from, to) as (DateTime<Tz>, DateTime<Tz>)
-//! // Adjusted for Utc.
-//! let (from_utc, to_utc) = p.from_to_utc(); // (from, to) as (DateTime<Utc>, DateTime<Utc>)
-//! // Adjusted for any supported region, for example Finland using region code "FI".
-//! let (from_r, to_r) = p.from_to_region("FI"); // (from, to) as (DateTime<Tz>, DateTime<Tz>)
-//! // Adjusted for any timezone, for example Los Angeles using chrono_tz's tz type.
-//! use chrono_tz::America::Los_Angeles;
-//! let (from_la, to_la) = p.from_to_tz(Los_Angeles);
 //!
 //! // Pretty print price (label like). Looks like this: "NOK 167,68 Kr./MWh".
 //! let p = &prices[8];

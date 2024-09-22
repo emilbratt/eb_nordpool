@@ -1,6 +1,6 @@
 use std::fmt;
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Utc, NaiveDate};
 use chrono_tz::Tz;
 
 use crate::region_time::dt_region_from_utc_dt;
@@ -13,6 +13,7 @@ pub mod hourly;
 pub struct Price {
     from: DateTime<Utc>,
     to: DateTime<Utc>,
+    pub date: NaiveDate,
     pub region: String,
     pub value: String,
     pub currency_unit: units::Currency,
@@ -82,7 +83,7 @@ impl Price {
     }
 
     pub fn from_to(&self) -> (DateTime<Tz>, DateTime<Tz>) {
-        (dt_region_from_utc_dt( &self.from, &self.region), dt_region_from_utc_dt(&self.to, &self.region))
+        (dt_region_from_utc_dt(&self.from, &self.region), dt_region_from_utc_dt(&self.to, &self.region))
     }
 
     pub fn from_to_utc(&self) -> (DateTime<Utc>, DateTime<Utc>) {

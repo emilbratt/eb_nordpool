@@ -6,7 +6,9 @@ use eb_nordpool::{elspot, error::HourlyError, units};
 fn eur_24h() {
     // testing standard 24h days data.
     let data = elspot::hourly::from_file("./tests/data/EUR_24H.json").unwrap();
-    assert!(data.prices_are_official());
+    assert_eq!("EUR", data.currency());
+    assert_eq!("2024-06-20", data.date().to_string());
+    assert!(!data.is_preliminary());
     assert!(data.has_region("Tr.heim"));
     assert!(data.has_region("SE1"));
     assert!(data.has_region("FI"));
@@ -15,20 +17,19 @@ fn eur_24h() {
     let prices = data.extract_prices_for_region("Tr.heim");
     let p = &prices[1];
     assert_eq!("5,82", p.value);
-    assert_eq!("EUR", p.currency_unit.country_code());
+    assert_eq!(data.date(), p.date);
 
     let prices = data.extract_prices_for_region("FI");
     let p = &prices[2];
     assert_eq!("-5,00", p.value);
+    assert_eq!(data.date(), p.date);
 
     let prices_all = data.extract_all_prices();
     for prices in prices_all {
         assert_eq!(prices.len(), 24);
         for p in prices {
             let (from, _) = p.from_to();
-            if p.region != "SYS" {
-                assert_eq!(data.date(), from.date_naive());
-            }
+            assert_eq!(data.date(), from.date_naive());
         }
     }
 }
@@ -37,6 +38,7 @@ fn eur_24h() {
 fn nok_25h() {
     // Test when we have 25 hours in a day.
     let data = elspot::hourly::from_file("./tests/data/NOK_25H.json").unwrap();
+    assert!(data.is_preliminary());
 
     let price = data.extract_prices_for_region("Tr.heim");
     let p = &price[3];
@@ -67,7 +69,8 @@ fn nok_25h() {
 fn nok_23h() {
     // Test when we have 23 hours in a day.
     let data = elspot::hourly::from_file("./tests/data/NOK_23H.json").unwrap();
-    assert!(!data.prices_are_official());
+    assert!(data.is_preliminary());
+    assert_eq!("2023-03-26", data.date().to_string());
 
     let prices = data.extract_prices_for_region("Oslo");
     assert_eq!(prices.len(), 23);
