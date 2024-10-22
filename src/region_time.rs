@@ -45,6 +45,10 @@ fn tz_from_region(region: &str) -> RegionResult<Tz> {
         _ => Err(RegionError::RegionTzNotSupported),
     }
 }
+
+/// Used to find out how many hours in the day for price data.
+/// It is always 24 hours.., except when it is 23 or 25 hours.
+/// For example, in spring we handle the transition from cet to cest.
 pub enum PriceHours {
     TwentyThree,
     TwentyFour,
@@ -63,11 +67,6 @@ impl PriceHours {
             Ok(tz) => NaiveDateTime::from(d).and_local_timezone(tz).unwrap(),
             Err(e) => panic!("{:?}", e),
         };
-
-        // if dt.offset() == (dt+Duration::days(1)).offset() {
-        //     println!("{}", dt.offset());
-        //     return PriceHours::TwentyFour;
-        // }
 
         match dt.with_hour(0) {
             Some(dt) if (dt+Duration::hours(23)).hour() == 0 => PriceHours::TwentyThree,

@@ -6,9 +6,10 @@ use chrono_tz::Tz;
 use crate::region_time::dt_region_from_utc_dt;
 use crate::units;
 
-pub mod hourly;
+pub mod dataportal_dayaheadprices;
+pub mod marketdata_page_10;
 
-/// Prices returned comes in the form of this datatype.
+/// Each price returned comes in the form of this datatype.
 #[derive(Clone, Debug)]
 pub struct Price {
     from: DateTime<Utc>,
@@ -17,6 +18,7 @@ pub struct Price {
     pub region: String,
     pub value: String,
     pub currency_unit: units::Currency,
+    pub market_time_unit: units::Mtu,
     pub power_unit: units::Power,
 }
 

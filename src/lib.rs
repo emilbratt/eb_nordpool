@@ -1,22 +1,16 @@
 //! `eb_nordpool` provides an easy way to extract elspot prices from Nordpool.
 //!
-//! # Getting started
+//! # Working with data from https://www.nordpoolgroup.com/api/marketdata/page/10
 //!
-//! Fetching prices from nordpoolgroup.com or from file.
+//! NOTE: This api is removed, but you might want to work with data already stored on your drive.
 //!
 //! ```
-//! use eb_nordpool::{elspot, region_time, units};
-//!
-//! // Download todays or tomorrows prices (we can not control this..)
-//! // If time is before 13:00 in Norway, you get prices for today; else you get for tomorrow.
-//! let data = elspot::hourly::from_nordpool_nok().unwrap();
-//! // ..this http request is currently blocking, but this might change in the future.
-//!
-//! // Check if prices are not finite (preliminary values means they might change).
-//! if data.is_preliminary() {
-//!     println!("prices are preliminary!");
-//! }
-//! // ..weekends might always contain preliminary values..
+//! // You need to import these modules.
+//! use eb_nordpool::{
+//!     elspot::marketdata_page_10,
+//!     error::ElspotError,
+//!     units,
+//! };
 //!
 //! // Date for prices, formatted as "YYYY-MM-DD" (chrono's NaiveDate type).
 //! data.date()
@@ -24,8 +18,11 @@
 //! // Save data to file.
 //! data.to_file("path/to/data.json");
 //!
-//! // Load data from tile.
-//! let data = elspot::hourly::from_file("path/to/data.json").unwrap();
+//! // Load data from local file.
+//! let data = marketdata_page_10::from_file("path/to/data.json").unwrap();
+//!
+//! // Load data from http server.
+//! let data = marketdata_page_10::from_url("http.....").unwrap();
 //!
 //! // Serialize data to json string, nice if you want to load it somewhere else.
 //! let s = data.to_json_string();
@@ -41,6 +38,11 @@
 //!     // ..do something
 //! }
 //!
+//! ```
+//!
+//! Extracting prices.
+//!
+//! ```
 //! // Get all prices for specific region (always in time ascending order starting at 00:00).
 //! let prices = data.extract_prices_for_region("Oslo");
 //!
@@ -84,10 +86,10 @@
 //! let i: i32 = p.as_i32();
 //!
 //! // Just get all prices for all regions in a 2D Array.
-//! let all_prices = data.extract_all_prices();
-//! for prices in all_prices.iter() {
-//!     for p in prices.iter() {
-//!         println!("Time: {} - {} ({})", p.hour(), p.price_label(), p.region)
+//! let regions = data.extract_all_prices();
+//! for region in regions.iter() {
+//!     for price in region.iter() {
+//!         println!("Time: {} - {} ({})", price.hour(), price.price_label(), price.region)
 //!     }
 //! }
 //! ```

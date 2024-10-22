@@ -1,11 +1,15 @@
 use std::fs;
 
-use eb_nordpool::{elspot, error::HourlyError, units};
+use eb_nordpool::{
+    elspot::marketdata_page_10,
+    error::ElspotError,
+    units,
+};
 
 #[test]
 fn eur_24h() {
     // testing standard 24h days data.
-    let data = elspot::hourly::from_file("./tests/data/EUR_24H.json").unwrap();
+    let data = marketdata_page_10::from_file("./tests/data/marketdata_page_10_EUR_24H.json").unwrap();
     assert_eq!("EUR", data.currency());
     assert_eq!("2024-06-20", data.date().to_string());
     assert!(!data.is_preliminary());
@@ -37,7 +41,7 @@ fn eur_24h() {
 #[test]
 fn nok_25h() {
     // Test when we have 25 hours in a day.
-    let data = elspot::hourly::from_file("./tests/data/NOK_25H.json").unwrap();
+    let data = marketdata_page_10::from_file("./tests/data/marketdata_page_10_NOK_25H.json").unwrap();
     assert!(data.is_preliminary());
 
     let price = data.extract_prices_for_region("Tr.heim");
@@ -68,7 +72,7 @@ fn nok_25h() {
 #[test]
 fn nok_23h() {
     // Test when we have 23 hours in a day.
-    let data = elspot::hourly::from_file("./tests/data/NOK_23H.json").unwrap();
+    let data = marketdata_page_10::from_file("./tests/data/marketdata_page_10_NOK_23H.json").unwrap();
     assert!(data.is_preliminary());
     assert_eq!("2023-03-26", data.date().to_string());
 
@@ -79,7 +83,7 @@ fn nok_23h() {
     assert_eq!(from.to_rfc3339(), "2023-03-26T00:00:00+01:00");
     assert_eq!(to.to_rfc3339(), "2023-03-26T01:00:00+01:00");
 
-    let data = elspot::hourly::from_file("./tests/data/NOK_23H.json").unwrap();
+    let data = marketdata_page_10::from_file("./tests/data/marketdata_page_10_NOK_23H.json").unwrap();
     for region in data.regions() {
         match region {
             // Test data has no prices for these regions..
@@ -101,36 +105,42 @@ fn nok_23h() {
 
 #[test]
 fn hourly_invalid_json() {
-    let mut json_str = fs::read_to_string("./tests/data/NOK_23H.json").unwrap();
+    let mut json_str = fs::read_to_string("./tests/data/marketdata_page_10_NOK_23H.json").unwrap();
 
     // Mess up the json file by adding a trailing character..
     json_str.push('!');
 
-    let data = elspot::hourly::from_json(&json_str);
+    let data = marketdata_page_10::from_json(&json_str);
     match data {
         Ok(_) => panic!(),
-        Err(e) => assert!(matches!(e, HourlyError::InvalidJSON)),
+        Err(e) => assert!(matches!(e, ElspotError::MarketdataPage10InvalidJson)),
     }
 }
 
 #[test]
 fn hourly_to_json_string() {
-    let data = elspot::hourly::from_file("./tests/data/EUR_24H.json").unwrap();
+    let data = marketdata_page_10::from_file("./tests/data/marketdata_page_10_EUR_24H.json").unwrap();
 
     // Save data to a string (serialized json).
     let s = data.to_json_string();
 
     // We just reload the string and see if it works, unwrap() will fail if Err.
-    elspot::hourly::from_json(&s).unwrap();
+    marketdata_page_10::from_json(&s).unwrap();
 }
 
 #[test]
 fn units() {
-    let data = elspot::hourly::from_file("./tests/data/EUR_24H.json").unwrap();
+    let data = marketdata_page_10::from_file("./tests/data/marketdata_page_10_EUR_24H.json").unwrap();
 
     let mut prices = data.extract_prices_for_region("Oslo");
     let mut p = &mut prices[1];
-    p.value = String::from("0167,680"); // Change to a value with trailing zero, we should be able to handle it.
+
+    assert!(matches!(p.market_time_unit, units::Mtu::Sixty));
+    assert_eq!(p.market_time_unit.as_int(), 60_usize);
+    assert_eq!(p.market_time_unit.as_str(), "60 minutes");
+
+    // Change to a value with trailing zero for testing, we should be able to handle it.
+    p.value = String::from("0167,680");
 
     units::convert_to_currency_fraction(&mut p);
     assert_eq!("16768", p.value);

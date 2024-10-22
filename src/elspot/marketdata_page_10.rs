@@ -2,8 +2,8 @@ use std::{fs, fmt};
 
 use crate::elspot::Price;
 use crate::error::{
-    HourlyError,
-    HourlyResult,
+    ElspotError,
+    ElspotResult,
     RegionError,
     RegionResult,
 };
@@ -28,17 +28,17 @@ const NORDPOOL_URL_DKK: &str = "https://www.nordpoolgroup.com/api/marketdata/pag
 const NORDPOOL_URL_NOK: &str = "https://www.nordpoolgroup.com/api/marketdata/page/10?currency=NOK";
 const NORDPOOL_URL_SEK: &str = "https://www.nordpoolgroup.com/api/marketdata/page/10?currency=SEK";
 
-pub fn from_json(json_str: &str) -> HourlyResult<Hourly> {
-    Hourly::new(json_str)
+pub fn from_json(json_str: &str) -> ElspotResult<MarkedData> {
+    MarkedData::new(json_str)
 }
 
-pub fn from_file(path: &str) -> HourlyResult<Hourly> {
+pub fn from_file(path: &str) -> ElspotResult<MarkedData> {
     let json_str = fs::read_to_string(path).unwrap();
 
     from_json(&json_str)
 }
 
-pub fn from_url(url: &str) -> HourlyResult<Hourly> {
+pub fn from_url(url: &str) -> ElspotResult<MarkedData> {
     let r = reqwest::blocking::get(url).unwrap();
 
     let json_str = r.text().unwrap();
@@ -46,19 +46,35 @@ pub fn from_url(url: &str) -> HourlyResult<Hourly> {
     from_json(&json_str)
 }
 
-pub fn from_nordpool_eur() -> HourlyResult<Hourly> {
+#[deprecated(
+    since="0.1.6",
+    note="`https://www.nordpoolgroup.com/api/marketdata/page/10?currency=EUR` was removed, use from_url() instead"
+)]
+pub fn from_nordpool_eur() -> ElspotResult<MarkedData> {
     from_url(NORDPOOL_URL_EUR)
 }
 
-pub fn from_nordpool_dkk() -> HourlyResult<Hourly> {
+#[deprecated(
+    since="0.1.6",
+    note="`https://www.nordpoolgroup.com/api/marketdata/page/10?currency=DKK` was removed, use from_url() instead"
+)]
+pub fn from_nordpool_dkk() -> ElspotResult<MarkedData> {
     from_url(NORDPOOL_URL_DKK)
 }
 
-pub fn from_nordpool_nok() -> HourlyResult<Hourly> {
+#[deprecated(
+    since="0.1.6",
+    note="`https://www.nordpoolgroup.com/api/marketdata/page/10?currency=NOK` was removed, use from_url() instead"
+)]
+pub fn from_nordpool_nok() -> ElspotResult<MarkedData> {
     from_url(NORDPOOL_URL_NOK)
 }
 
-pub fn from_nordpool_sek() -> HourlyResult<Hourly> {
+#[deprecated(
+    since="0.1.6",
+    note="`https://www.nordpoolgroup.com/api/marketdata/page/10?currency=SEK` was removed, use from_url() instead"
+)]
+pub fn from_nordpool_sek() -> ElspotResult<MarkedData> {
     from_url(NORDPOOL_URL_SEK)
 }
 
@@ -102,19 +118,19 @@ impl fmt::Display for Currency {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")] // re-format the name "pageId" from input data to "page_id" used in the struct.
-pub struct Hourly {
+pub struct MarkedData {
     data: Data,
     currency: Currency,
     page_id: usize,
 }
 
-impl Hourly {
-    fn new(json_str: &str) -> HourlyResult<Self> {
+impl MarkedData {
+    pub fn new(json_str: &str) -> ElspotResult<Self> {
         match serde_json::from_str::<Self>(json_str) {
             Ok(data) => {
                 // Page id for hourly elspot is 10.
                 if data.page_id != 10 {
-                    return Err(HourlyError::InvalidPageID);
+                    return Err(ElspotError::MarketdataPage10InvalidPageId);
                 }
 
                 // Check if 'unit_string' is in the array.
@@ -131,7 +147,7 @@ impl Hourly {
                 Ok(data)
             }
             Err(_) => {
-                Err(HourlyError::InvalidJSON)
+                Err(ElspotError::MarketdataPage10InvalidJson)
             }
         }
     }
@@ -226,6 +242,7 @@ impl Hourly {
                 date: self.data.DataStartdate.date(),
                 region: region.to_string(),
                 currency_unit: units::Currency::new(unit_string).unwrap_or_else(|e| panic!("{}", e)),
+                market_time_unit: units::Mtu::Sixty,
                 power_unit: units::Power::new(unit_string).unwrap_or_else(|e| panic!("{}", e)),
             };
 
@@ -257,7 +274,7 @@ impl Hourly {
     }
 }
 
-impl fmt::Display for Hourly {
+impl fmt::Display for MarkedData {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }

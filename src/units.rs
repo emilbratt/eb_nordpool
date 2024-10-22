@@ -113,6 +113,30 @@ impl Currency {
     }
 }
 
+/// MTU stands for Market Time Unit and time units are measured in minutes.
+/// Sixty = 60 minutes, Fifteen = 15 minutes..
+#[derive(Clone, Debug)]
+pub enum Mtu {
+    Sixty,
+    Fifteen,
+}
+
+impl Mtu {
+    pub fn as_int(&self) -> usize {
+        match &self {
+            Self::Sixty => 60_usize,
+            Self::Fifteen => 15_usize,
+        }
+    }
+
+    pub fn as_str(&self) -> &str {
+        match &self {
+            Self::Sixty => "60 minutes",
+            Self::Fifteen => "15 minutes",
+        }
+    }
+}
+
 #[allow(non_camel_case_types)]
 #[derive(Clone, Debug)]
 pub enum Power {

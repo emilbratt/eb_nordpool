@@ -1,21 +1,17 @@
 use std::fmt;
 use core::result::Result;
 
-pub type HourlyResult<T> = Result<T, HourlyError>;
+pub type ElspotResult<T> = Result<T, ElspotError>;
 
 #[derive(Debug)]
-pub enum HourlyError {
-    InvalidJSON,
-    InvalidPageID,
-    InvalidUnitstring,
-    PriceDateMismatch,
-    PriceHourMismatch,
-    PriceHourMismatchCESTToCET,
-    PriceRegionNotFound,
-    PriceFilteredRowsExceededTwo,
+pub enum ElspotError {
+    DataPortalDayaheadPricesNotImplemented,
+
+    MarketdataPage10InvalidJson,
+    MarketdataPage10InvalidPageId,
 }
 
-impl fmt::Display for HourlyError {
+impl fmt::Display for ElspotError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
