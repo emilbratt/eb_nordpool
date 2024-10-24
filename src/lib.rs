@@ -86,7 +86,7 @@
 //! let i: i32 = p.as_i32();
 //!
 //! // Just get all prices for all regions in a 2D Array.
-//! let regions = data.extract_all_prices();
+//! let regions = data.extract_prices_all_regions();
 //! for region in regions.iter() {
 //!     for price in region.iter() {
 //!         println!("Time: {} - {} ({})", price.hour(), price.price_label(), price.region)

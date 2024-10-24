@@ -5,10 +5,13 @@ pub type ElspotResult<T> = Result<T, ElspotError>;
 
 #[derive(Debug)]
 pub enum ElspotError {
-    DataPortalDayaheadPricesNotImplemented,
+    DataPortalDayaheadPricesInvalidJson,
+    DataPortalDayaheadPricesInvalidVersion,
 
     MarketdataPage10InvalidJson,
     MarketdataPage10InvalidPageId,
+    MarketdataPage10MissingUnitString,
+    MarketdataPage10InvalidUnitString,
 }
 
 impl fmt::Display for ElspotError {
@@ -22,6 +25,7 @@ pub type RegionResult<T> = Result<T, RegionError>;
 #[derive(Debug)]
 pub enum RegionError {
     RegionIndexNotFound,
+    RegionNotSupported,
     RegionTzNotSupported,
 }
 
@@ -35,7 +39,9 @@ pub type UnitResult<T> = Result<T, UnitError>;
 
 #[derive(Debug)]
 pub enum UnitError {
-    InvalidUnitstring,
+    InvalidCurrencyUnit,
+    InvalidPowerUnit,
+    InvalidMtuUnit,
 }
 
 impl fmt::Display for UnitError {

@@ -5,19 +5,11 @@
 
 use std::fmt;
 
-use crate::elspot::Price;
+use crate::elspot;
 use crate::error::{
     UnitError,
     UnitResult,
 };
-
-// The unit string is found somewhere inside the data-set from nordpool.
-pub const EXPECTED_UNIT_SRINGS: [&str; 4] = [
-    "EUR/MWh",
-    "DKK/MWh",
-    "NOK/MWh",
-    "SEK/MWh",
-];
 
 #[derive(Clone, Debug)]
 pub enum CurrencyUnit {
@@ -41,13 +33,13 @@ impl fmt::Display for Currency {
 
 impl Currency {
     pub fn new(unit_string: &str) -> UnitResult<Self> {
-        // unit_string looks like this "EUR/MWh"..
-        match unit_string {
-            "EUR/MWh" => Ok(Self::EUR(CurrencyUnit::Full)),
-            "DKK/MWh" => Ok(Self::DKK(CurrencyUnit::Full)),
-            "NOK/MWh" => Ok(Self::NOK(CurrencyUnit::Full)),
-            "SEK/MWh" => Ok(Self::SEK(CurrencyUnit::Full)),
-            _ => Err(UnitError::InvalidUnitstring),
+        // will also handle unit_string that looks like this "EUR/MWh"..
+        match unit_string[..3].as_ref() {
+            "EUR" => Ok(Self::EUR(CurrencyUnit::Full)),
+            "DKK" => Ok(Self::DKK(CurrencyUnit::Full)),
+            "NOK" => Ok(Self::NOK(CurrencyUnit::Full)),
+            "SEK" => Ok(Self::SEK(CurrencyUnit::Full)),
+            _ => Err(UnitError::InvalidCurrencyUnit),
         }
     }
 
@@ -122,6 +114,14 @@ pub enum Mtu {
 }
 
 impl Mtu {
+    pub fn new(n: usize) -> UnitResult<Self> {
+        match n {
+            15 => Ok(Self::Fifteen),
+            60 => Ok(Self::Sixty),
+            _ => Err(UnitError::InvalidMtuUnit),
+        }
+    }
+
     pub fn as_int(&self) -> usize {
         match &self {
             Self::Sixty => 60_usize,
@@ -152,11 +152,11 @@ impl fmt::Display for Power {
 
 impl Power {
     pub fn new(unit_string: &str) -> UnitResult<Self> {
-        // unit_string looks like this "EUR/MWh"..
-        match unit_string[4..].as_ref() {
+        // will also handle unit_string that looks like this "EUR/MWh"..
+        match unit_string[unit_string.len()-3..].as_ref() {
             "MWh" => Ok(Self::MWh),
             "kWh" => Ok(Self::kWh),
-            _ => Err(UnitError::InvalidUnitstring),
+            _ => Err(UnitError::InvalidPowerUnit),
         }
     }
 
@@ -241,7 +241,7 @@ fn move_comma_left(value: &mut String, moves: usize) {
 }
 
 /// Converts the base currency to its fractional value by moving comma 2 steps to the right.
-pub fn convert_to_currency_fraction(p: &mut Price) {
+pub fn convert_to_currency_fraction(p: &mut elspot::Price) {
     if p.currency_unit.is_full() {
         move_comma_right(&mut p.value, 2);
         p.currency_unit.to_fraction();
@@ -249,7 +249,7 @@ pub fn convert_to_currency_fraction(p: &mut Price) {
 }
 
 /// Converts the currencies sub-unit to its full value by moving comma 2 steps to the left.
-pub fn convert_to_currency_full(p: &mut Price) {
+pub fn convert_to_currency_full(p: &mut elspot::Price) {
     if p.currency_unit.is_fraction() {
         move_comma_left(&mut p.value, 2);
         p.currency_unit.to_full();
@@ -257,7 +257,7 @@ pub fn convert_to_currency_full(p: &mut Price) {
 }
 
 /// The price is calculated to 1/1000 of its original value (1/1000M = 1k).
-pub fn convert_to_kwh(p: &mut Price) {
+pub fn convert_to_kwh(p: &mut elspot::Price) {
     if p.power_unit.is_mwh() {
         move_comma_left(&mut p.value, 3);
         p.power_unit.to_kwh();
@@ -265,17 +265,9 @@ pub fn convert_to_kwh(p: &mut Price) {
 }
 
 /// The price is calculated to 1000x of its original value (1000k = 1M).
-pub fn convert_to_mwh(p: &mut Price) {
+pub fn convert_to_mwh(p: &mut elspot::Price) {
     if p.power_unit.is_kwh() {
         move_comma_right(&mut p.value, 3);
         p.power_unit.to_mwh();
-    }
-}
-
-pub fn test_unit_string(unit_string: &str) -> UnitResult<()> {
-    if EXPECTED_UNIT_SRINGS.contains(&unit_string) {
-        Ok(())
-    } else {
-        Err(UnitError::InvalidUnitstring)
     }
 }

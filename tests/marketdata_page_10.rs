@@ -28,7 +28,7 @@ fn eur_24h() {
     assert_eq!("-5,00", p.value);
     assert_eq!(data.date(), p.date);
 
-    let prices_all = data.extract_all_prices();
+    let prices_all = data.extract_prices_all_regions();
     for prices in prices_all {
         assert_eq!(prices.len(), 24);
         for p in prices {

@@ -9,8 +9,16 @@ use eb_nordpool::{
 };
 
 #[test]
-fn dummy() {
-    let data = dataportal_dayaheadprices::from_json("");
-
-    assert!(matches!(data, Err(ElspotError::DataPortalDayaheadPricesNotImplemented)));
+fn from_file() {
+    let data = dataportal_dayaheadprices::from_file("./tests/data/dataportal_dayaheadprices_NOK.json");
+    match data {
+        Ok(data) => {
+            assert!(!data.is_preliminary());
+            assert!(data.has_region("DK1"));
+            assert!(data.has_region("NO3"));
+        }
+        Err(e) => {
+            panic!("Error: {}", e);
+        }
+    }
 }

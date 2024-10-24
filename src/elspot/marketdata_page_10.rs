@@ -23,6 +23,8 @@ use serde_json;
 
 use reqwest;
 
+mod unit_string;
+
 const NORDPOOL_URL_EUR: &str = "https://www.nordpoolgroup.com/api/marketdata/page/10?currency=EUR";
 const NORDPOOL_URL_DKK: &str = "https://www.nordpoolgroup.com/api/marketdata/page/10?currency=DKK";
 const NORDPOOL_URL_NOK: &str = "https://www.nordpoolgroup.com/api/marketdata/page/10?currency=NOK";
@@ -103,24 +105,10 @@ struct Data {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-enum Currency {
-    DKK,
-    EUR,
-    NOK,
-    SEK,
-}
-
-impl fmt::Display for Currency {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")] // re-format the name "pageId" from input data to "page_id" used in the struct.
 pub struct MarkedData {
     data: Data,
-    currency: Currency,
+    currency: String,
     page_id: usize,
 }
 
@@ -135,13 +123,13 @@ impl MarkedData {
 
                 // Check if 'unit_string' is in the array.
                 if data.data.Units.is_empty() {
-                    panic!("No unit string in data.Units");
+                    return Err(ElspotError::MarketdataPage10MissingUnitString);
                 }
 
                 // Test 'unit_string' to ensure it is valid.
                 let unit_string = &data.data.Units[0];
-                if let Err(e) = units::test_unit_string(unit_string) {
-                    panic!("{}, found value '{}' in data.Units[0]", e, unit_string);
+                if let Err(e) = unit_string::test_unit_string(unit_string) {
+                    panic!("{}: '{}'", e, unit_string);
                 }
 
                 Ok(data)
@@ -197,8 +185,8 @@ impl MarkedData {
         res.is_some()
     }
 
-    pub fn currency(&self) -> String {
-        self.currency.to_string()
+    pub fn currency(&self) -> &str {
+        self.currency.as_ref()
     }
 
     pub fn date(&self) -> NaiveDate {
@@ -242,7 +230,7 @@ impl MarkedData {
                 date: self.data.DataStartdate.date(),
                 region: region.to_string(),
                 currency_unit: units::Currency::new(unit_string).unwrap_or_else(|e| panic!("{}", e)),
-                market_time_unit: units::Mtu::Sixty,
+                market_time_unit: units::Mtu::new(60).unwrap_or_else(|e| panic!("{}", e)),
                 power_unit: units::Power::new(unit_string).unwrap_or_else(|e| panic!("{}", e)),
             };
 
@@ -255,7 +243,7 @@ impl MarkedData {
         prices_region
     }
 
-    pub fn extract_all_prices(&self) -> Vec<Vec<Price>> {
+    pub fn extract_prices_all_regions(&self) -> Vec<Vec<Price>> {
         let mut prices_regions: Vec<Vec<Price>> = vec![];
         for region in self.regions() {
             prices_regions.push(self.extract_prices_for_region(region));
