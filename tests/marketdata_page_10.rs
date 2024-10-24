@@ -136,7 +136,7 @@ fn units() {
     let mut p = &mut prices[1];
 
     assert!(matches!(p.market_time_unit, units::Mtu::Sixty));
-    assert_eq!(p.market_time_unit.as_int(), 60_usize);
+    assert_eq!(p.market_time_unit as isize, 60);
     assert_eq!(p.market_time_unit.as_str(), "60 minutes");
 
     // Change to a value with trailing zero for testing, we should be able to handle it.

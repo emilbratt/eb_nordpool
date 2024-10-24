@@ -107,10 +107,11 @@ impl Currency {
 
 /// MTU stands for Market Time Unit and time units are measured in minutes.
 /// Sixty = 60 minutes, Fifteen = 15 minutes..
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Copy)]
 pub enum Mtu {
-    Sixty,
-    Fifteen,
+    // https://doc.rust-lang.org/reference/items/enumerations.html
+    Sixty = 60,
+    Fifteen = 15,
 }
 
 impl Mtu {
@@ -119,13 +120,6 @@ impl Mtu {
             15 => Ok(Self::Fifteen),
             60 => Ok(Self::Sixty),
             _ => Err(UnitError::InvalidMtuUnit),
-        }
-    }
-
-    pub fn as_int(&self) -> usize {
-        match &self {
-            Self::Sixty => 60_usize,
-            Self::Fifteen => 15_usize,
         }
     }
 
