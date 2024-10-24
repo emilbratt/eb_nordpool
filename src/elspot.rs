@@ -33,12 +33,11 @@ impl Price {
         // This function will try its best to round the floating point number to the correct value.
         // Large numbers (including negative) or numbers with many fractional digits,
         // might in rare cases be rounded the wrong way due to floating point precision errors.
-        let f = self.value.replace(',', ".").split_whitespace().collect::<String>();
 
         // Test number before starting.
-        assert!(f.parse::<f32>().is_ok());
+        self.value.parse::<f32>().unwrap_or_else(|e| panic!("{} '{}' is not parsable to float", e, self.value));
 
-        let mut split = f.split('.');
+        let mut split = self.value.split('.');
         let whole_numbers = split.next().unwrap();
         match split.next() {
             Some("") | None => {

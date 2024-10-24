@@ -20,12 +20,12 @@ fn eur_24h() {
 
     let prices = data.extract_prices_for_region("Tr.heim");
     let p = &prices[1];
-    assert_eq!("5,82", p.value);
+    assert_eq!("5.82", p.value);
     assert_eq!(data.date(), p.date);
 
     let prices = data.extract_prices_for_region("FI");
     let p = &prices[2];
-    assert_eq!("-5,00", p.value);
+    assert_eq!("-5.00", p.value);
     assert_eq!(data.date(), p.date);
 
     let prices_all = data.extract_prices_all_regions();
@@ -46,7 +46,7 @@ fn nok_25h() {
 
     let price = data.extract_prices_for_region("Tr.heim");
     let p = &price[3];
-    assert_eq!("167,66", p.value);
+    assert_eq!("167.66", p.value);
 
     for region in data.regions() {
         match region {
@@ -140,7 +140,7 @@ fn units() {
     assert_eq!(p.market_time_unit.as_str(), "60 minutes");
 
     // Change to a value with trailing zero for testing, we should be able to handle it.
-    p.value = String::from("0167,680");
+    p.value = String::from("0167.680");
 
     units::convert_to_currency_fraction(&mut p);
     assert_eq!("16768", p.value);
@@ -149,30 +149,30 @@ fn units() {
     assert_eq!("MWh", p.power_unit.to_string());
 
     units::convert_to_kwh(&mut p);
-    assert_eq!("16,768", p.value);
+    assert_eq!("16.768", p.value);
     assert_eq!(17_f32, p.as_f32());
     assert_eq!("kWh", p.power_unit.to_string());
 
     units::convert_to_currency_full(&mut p);
-    assert_eq!("0,16768", p.value);
+    assert_eq!("0.16768", p.value);
     assert_eq!(0.17_f32, p.as_f32());
     assert_eq!("Eur.", p.currency_unit.to_string());
     assert_eq!("kWh", p.power_unit.to_string());
 
     units::convert_to_mwh(&mut p);
     assert_eq!(167.68_f32, p.as_f32());
-    assert_eq!("167,68", p.value);
+    assert_eq!("167.68", p.value);
     assert_eq!("MWh", p.power_unit.to_string());
 
-    p.value = String::from("10,505");
+    p.value = String::from("10.505");
     units::convert_to_currency_fraction(&mut p);
     assert_eq!(1051_f32, p.as_f32());
     assert_eq!("Cent", p.currency_unit.to_string());
 
-    p.value = String::from("10,5");
+    p.value = String::from("10.5");
     assert_eq!(11_i32, p.as_i32());
-    p.value = String::from("-10,5");
+    p.value = String::from("-10.5");
     assert_eq!(-11_i32, p.as_i32());
-    p.value = String::from("-10,49");
+    p.value = String::from("-10.49");
     assert_eq!(-10_i32, p.as_i32());
 }

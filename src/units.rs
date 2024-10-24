@@ -5,6 +5,8 @@
 
 use std::fmt;
 
+use chrono::{DateTime, Utc};
+
 use crate::elspot;
 use crate::error::{
     UnitError,
@@ -115,8 +117,10 @@ pub enum Mtu {
 }
 
 impl Mtu {
-    pub fn new(n: usize) -> UnitResult<Self> {
-        match n {
+    pub fn new(f: DateTime<Utc>, t: DateTime<Utc>) -> UnitResult<Self> {
+        let diff = t - f;
+
+        match diff.num_minutes() {
             15 => Ok(Self::Fifteen),
             60 => Ok(Self::Sixty),
             _ => Err(UnitError::InvalidMtuUnit),
@@ -177,7 +181,7 @@ fn move_comma_right(value: &mut String, moves: usize) {
         value.remove(0);
     }
 
-    match value.find(',') {
+    match value.find('.') {
         Some(i) => {
             // Remove trailing zeros as they have no value after comma.
             while value.ends_with('0') {
@@ -192,7 +196,7 @@ fn move_comma_right(value: &mut String, moves: usize) {
 
             // Insert comma if it will not end up as the last character.
             if i+moves < value.len() {
-                value.insert(i+moves, ',');
+                value.insert(i+moves, '.');
             }
         },
         None => {
@@ -207,13 +211,13 @@ fn move_comma_left(value: &mut String, moves: usize) {
         value.remove(0);
     }
 
-    if let Some(i) = value.find(',') {
+    if let Some(i) = value.find('.') {
         value.remove(i);
         if i <= moves {
             value.insert_str(0, "0".repeat(moves-i).as_ref());
-            value.insert_str(0, "0,");
+            value.insert_str(0, "0.");
         } else {
-            value.insert(i-moves, ',');
+            value.insert(i-moves, '.');
         }
 
         // Remove trailing zeros as they have no value as last digit after comma.
@@ -222,7 +226,7 @@ fn move_comma_left(value: &mut String, moves: usize) {
         }
 
         // Remove trailing comma if there are no fractions left.
-        if value.ends_with(',') {
+        if value.ends_with('.') {
             value.pop();
         }
     } else {
@@ -230,7 +234,7 @@ fn move_comma_left(value: &mut String, moves: usize) {
             value.insert(0, '0');
         }
 
-        value.insert(value.len()-moves, ',');
+        value.insert(value.len()-moves, '.');
     }
 }
 

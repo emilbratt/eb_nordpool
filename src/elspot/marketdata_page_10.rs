@@ -224,13 +224,13 @@ impl MarkedData {
             }
 
             let p = Price {
-                value: price.Value.to_string(),
+                value: price.Value.to_string().replace(',', "."),
                 from: start_time.to_utc(),
                 to: end_time.to_utc(),
                 date: self.data.DataStartdate.date(),
                 region: region.to_string(),
                 currency_unit: units::Currency::new(unit_string).unwrap_or_else(|e| panic!("{}", e)),
-                market_time_unit: units::Mtu::new(60).unwrap_or_else(|e| panic!("{}", e)),
+                market_time_unit: units::Mtu::Sixty, // Is always 60 minutes for this nordpool api.
                 power_unit: units::Power::new(unit_string).unwrap_or_else(|e| panic!("{}", e)),
             };
 

@@ -31,7 +31,6 @@ use reqwest;
 pub mod regions;
 pub mod query;
 
-
 pub fn from_json(json_str: &str) -> ElspotResult<MarkedData> {
     MarkedData::new(json_str)
 }
@@ -131,6 +130,10 @@ impl MarkedData {
                     return Err(ElspotError::DataPortalDayaheadPricesInvalidVersion);
                 }
 
+                if data.market != "DayAhead" {
+                    return Err(ElspotError::DataPortalDayaheadPricesInvalidMarket);
+                }
+
                 Ok(data)
             }
             Err(e) => {
@@ -191,11 +194,43 @@ impl MarkedData {
     }
 
     pub fn extract_prices_for_region(&self, region: &str) -> Vec<Price> {
-        unimplemented!()
+        if !self.has_region(region) {
+            panic!("'{}' cound not be found", region);
+        }
+
+        let mut prices: Vec<Price> = vec![];
+
+        for e in self.multi_area_entries.iter() {
+            let v = e.entry_per_area[region].to_string();
+
+            let cu = units::Currency::new(&self.currency).unwrap_or_else(|e| panic!("{}", e));
+            let pu = units::Power::new("MWh").unwrap_or_else(|e| panic!("{}", e));
+            let mtu = units::Mtu::new(e.delivery_start, e.delivery_end).unwrap_or_else(|e| panic!("{}", e));
+
+            let p = Price {
+                value: v,
+                from: e.delivery_start,
+                to: e.delivery_end,
+                date: self.delivery_date_c_e_t,
+                region: region.to_string(),
+                currency_unit: cu,
+                market_time_unit: mtu,
+                power_unit: pu,
+            };
+
+            prices.push(p);
+        }
+
+        prices
     }
 
     pub fn extract_prices_all_regions(&self) -> Vec<Vec<Price>> {
-        unimplemented!()
+        let mut prices_regions: Vec<Vec<Price>> = vec![];
+        for region in self.delivery_areas.iter() {
+            prices_regions.push(self.extract_prices_for_region(region));
+        }
+
+        prices_regions
     }
 
     pub fn to_json_string(&self) -> String {

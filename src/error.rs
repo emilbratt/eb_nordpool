@@ -6,7 +6,9 @@ pub type ElspotResult<T> = Result<T, ElspotError>;
 #[derive(Debug)]
 pub enum ElspotError {
     DataPortalDayaheadPricesInvalidJson,
+    DataPortalDayaheadPricesInvalidMarket,
     DataPortalDayaheadPricesInvalidVersion,
+    DataPortalDayaheadPricesRegionNotFound,
 
     MarketdataPage10InvalidJson,
     MarketdataPage10InvalidPageId,
