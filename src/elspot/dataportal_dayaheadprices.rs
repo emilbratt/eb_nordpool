@@ -20,8 +20,9 @@ use reqwest;
 
 pub mod currencies;
 pub mod regions;
-pub mod query;
-pub mod states;
+
+mod query;
+mod states;
 
 pub fn from_json(json_str: &str) -> ElspotResult<MarkedData> {
     MarkedData::new(json_str)
@@ -112,13 +113,13 @@ impl MarkedData {
     pub fn new(json_str: &str) -> ElspotResult<Self> {
         match serde_json::from_str::<Self>(json_str) {
             Ok(data) => {
-                if data.version != 3 {
-                    return Err(ElspotError::DataPortalDayaheadPricesInvalidVersion);
-                }
+                // if data.version < 1 || data.version > 3 {
+                //     return Err(ElspotError::DataPortalDayaheadPricesInvalidVersion);
+                // }
 
-                if data.market != "DayAhead" {
-                    return Err(ElspotError::DataPortalDayaheadPricesInvalidMarket);
-                }
+                // if data.market != "DayAhead" {
+                //     return Err(ElspotError::DataPortalDayaheadPricesInvalidMarket);
+                // }
 
                 Ok(data)
             }
@@ -127,6 +128,17 @@ impl MarkedData {
                 Err(ElspotError::DataPortalDayaheadPricesInvalidJson)
             }
         }
+    }
+
+    /// Check if prices are final.
+    pub fn is_final(&self) -> bool {
+        for states in self.area_states.iter() {
+            if !states.state.is_final() {
+                return false;
+            }
+        }
+
+        true
     }
 
     /// Prices are either final or preliminary.

@@ -1,5 +1,5 @@
 use chrono::NaiveDate;
-use reqwest::Url;
+use url::Url;
 
 use crate::elspot::dataportal_dayaheadprices::currencies::SUPPORTED_CURRENCIES;
 use crate::elspot::dataportal_dayaheadprices::regions::SUPPORTED_REGIONS;

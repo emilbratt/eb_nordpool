@@ -153,6 +153,11 @@ impl MarkedData {
         }
     }
 
+    /// Check if prices are final.
+    pub fn is_final(&self) -> bool {
+        !self.data.ContainsPreliminaryValues
+    }
+
     /// Check if prices are not finite.
     pub fn is_preliminary(&self) -> bool {
         self.data.ContainsPreliminaryValues

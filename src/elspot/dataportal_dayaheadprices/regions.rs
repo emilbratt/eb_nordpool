@@ -73,7 +73,7 @@ pub const SUPPORTED_REGIONS: [&str; 22] = [
     "SYS",
 ];
 
-pub fn print_all() {
+pub fn list_supported() {
     println!("Supported regions");
     for r in SUPPORTED_REGIONS {
         println!("'{}' ", r);

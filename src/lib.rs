@@ -28,8 +28,8 @@
 //!     regions.push(region);
 //! }
 //! // NOTE: you can easily print out all supported currencies and regions..
-//! dataportal_dayaheadprices::currencies::print_all();
-//! dataportal_dayaheadprices::regions::print_all();
+//! dataportal_dayaheadprices::currencies::list_supported();
+//! dataportal_dayaheadprices::regions::list_supported();
 //! // Finally, download data.
 //! let data = dataportal_dayaheadprices::from_nordpool(currency, date, regions).unwrap();
 //! ```
@@ -60,22 +60,20 @@
 //! ```
 //! // Once you have loaded the data with one of the two workflows above, we can do stuff.
 //!
-//! // Get date for prices, formatted as "YYYY-MM-DD" (chrono's NaiveDate type).
-//! data.date()
-//! 
-//! // Print out all available regions.
-//! data.print_regions();
-//!
-//! // Get all available regions in a Vec<&str>.
-//! let regions = data.regions();
-//!
-//! // Check if region exists in dataset.
-//! if data.has_region("Oslo") {
-//!     // ..do something
-//! }
-//!
 //! // Get all prices for specific region (always in time ascending order starting at 00:00).
 //! let prices = data.extract_prices_for_region("Oslo");
+//!
+//! // Grab a single price.
+//! let p = &prices[8];
+//! // Get the price value as String.
+//! let v = &p.value;
+//! // Pretty print price (label like). Looks like this: "NOK 167,68 Kr./MWh".
+//! println!("{}", p.price_label());
+//!
+//! // Get price as numeric data types.
+//! let p = &prices[8];
+//! let f = p.as_f32();
+//! let i = p.as_i32();
 //!
 //! // Get time window (from and to) for a price in chrono's datetime type.
 //! let p = &prices[0];
@@ -107,21 +105,26 @@
 //!     println!("{}", p.price_label());
 //! }
 //!
-//! // Pretty print price (label like). Looks like this: "NOK 167,68 Kr./MWh".
-//! let p = &prices[8];
-//! println!("{}", p.price_label());
-//!
-//! // Get price as numeric data types.
-//! let p = &prices[8];
-//! let f = p.as_f32();
-//! let i = p.as_i32();
-//!
 //! // Just get all prices for all regions in a 2D Array.
 //! let regions = data.extract_prices_all_regions();
 //! for prices in regions.iter() {
 //!     for price in prices.iter() {
 //!         println!("Time: {} - {} ({})", price.hour(), price.price_label(), price.region)
 //!     }
+//! }
+//!
+//! // Get date for prices, formatted as "YYYY-MM-DD" (chrono's NaiveDate type).
+//! data.date()
+//!
+//! // Print out all available regions.
+//! data.print_regions();
+//!
+//! // Get all available regions in a Vec<&str>.
+//! let regions = data.regions();
+//!
+//! // Check if region exists in dataset.
+//! if data.has_region("Oslo") {
+//!     // ..do something
 //! }
 //!
 //! // Save data to file.

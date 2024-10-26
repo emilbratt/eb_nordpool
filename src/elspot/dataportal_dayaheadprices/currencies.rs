@@ -23,7 +23,7 @@ pub const SUPPORTED_CURRENCIES: [&str; 4] = [
     "SEK",
 ];
 
-pub fn print_all() {
+pub fn list_supported() {
     println!("Supported currencies");
     for c in SUPPORTED_CURRENCIES {
         println!("'{}' ", c);

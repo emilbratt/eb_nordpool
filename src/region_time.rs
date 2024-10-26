@@ -25,22 +25,28 @@ use chrono_tz::{
 };
 
 const NORDPOOL_TZ_REGION: &str = "Oslo";
-
 fn tz_from_region(region: &str) -> RegionResult<Tz> {
     match region {
+        // Nordic
         "Oslo" | "Bergen" | "Kr.sand" | "Molde" | "Tr.heim" | "Tromsø" => Ok(Oslo),
         "NO1" | "NO2" | "NO3" | "NO4" | "NO5" => Ok(Oslo),
         "SE1" | "SE2" | "SE3" | "SE4" => Ok(Stockholm),
         "DK1" | "DK2" => Ok(Copenhagen),
         "FI" => Ok(Helsinki),
+
+        // Baltic
         "EE" => Ok(Tallinn),
         "LV" => Ok(Riga),
         "LT" => Ok(Vilnius),
+
+        // Central Western Europe
         "AT" => Ok(Vienna),
         "BE" => Ok(Brussels),
         "DE-LU" => Ok(Luxembourg),
         "FR" => Ok(Paris),
         "NL" => Ok(Amsterdam),
+
+        // System
         "SYS" => Ok(UTC),
         _ => Err(RegionError::RegionTzNotSupported),
     }
