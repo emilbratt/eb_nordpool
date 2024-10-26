@@ -18,3 +18,11 @@ pub fn test_unit_string(unit_string: &str) -> ElspotResult<()> {
         Err(ElspotError::MarketdataPage10InvalidUnitString)
     }
 }
+
+pub fn extract_currency_unit(unit_string: &str) -> &str {
+    &unit_string[..3]
+}
+
+pub fn extract_power_unit(unit_string: &str) -> &str {
+    &unit_string[unit_string.len()-3..]
+}

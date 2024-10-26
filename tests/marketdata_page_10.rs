@@ -104,7 +104,7 @@ fn nok_23h() {
 }
 
 #[test]
-fn hourly_invalid_json() {
+fn invalid_json() {
     let mut json_str = fs::read_to_string("./tests/data/marketdata_page_10_NOK_23H.json").unwrap();
 
     // Mess up the json file by adding a trailing character..
@@ -118,7 +118,7 @@ fn hourly_invalid_json() {
 }
 
 #[test]
-fn hourly_to_json_string() {
+fn to_json_string() {
     let data = marketdata_page_10::from_file("./tests/data/marketdata_page_10_EUR_24H.json").unwrap();
 
     // Save data to a string (serialized json).

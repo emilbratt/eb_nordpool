@@ -34,9 +34,9 @@ impl fmt::Display for Currency {
 }
 
 impl Currency {
-    pub fn new(unit_string: &str) -> UnitResult<Self> {
+    pub fn new(currency: &str) -> UnitResult<Self> {
         // will also handle unit_string that looks like this "EUR/MWh"..
-        match unit_string[..3].as_ref() {
+        match currency {
             "EUR" => Ok(Self::EUR(CurrencyUnit::Full)),
             "DKK" => Ok(Self::DKK(CurrencyUnit::Full)),
             "NOK" => Ok(Self::NOK(CurrencyUnit::Full)),
@@ -128,7 +128,7 @@ impl Mtu {
     }
 
     pub fn as_str(&self) -> &str {
-        match &self {
+        match self {
             Self::Sixty => "60 minutes",
             Self::Fifteen => "15 minutes",
         }
@@ -149,9 +149,9 @@ impl fmt::Display for Power {
 }
 
 impl Power {
-    pub fn new(unit_string: &str) -> UnitResult<Self> {
+    pub fn new(pwr_unit: &str) -> UnitResult<Self> {
         // will also handle unit_string that looks like this "EUR/MWh"..
-        match unit_string[unit_string.len()-3..].as_ref() {
+        match pwr_unit {
             "MWh" => Ok(Self::MWh),
             "kWh" => Ok(Self::kWh),
             _ => Err(UnitError::InvalidPowerUnit),

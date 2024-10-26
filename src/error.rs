@@ -8,7 +8,7 @@ pub enum ElspotError {
     DataPortalDayaheadPricesInvalidJson,
     DataPortalDayaheadPricesInvalidMarket,
     DataPortalDayaheadPricesInvalidVersion,
-    DataPortalDayaheadPricesRegionNotFound,
+    DataPortalDayaheadPricesNoRegionsSupplied,
 
     MarketdataPage10InvalidJson,
     MarketdataPage10InvalidPageId,

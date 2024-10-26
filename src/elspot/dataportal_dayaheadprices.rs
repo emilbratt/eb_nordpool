@@ -1,5 +1,3 @@
-#![allow(unused)]
-
 use std::{fs, fmt};
 use std::collections::HashMap;
 
@@ -7,29 +5,23 @@ use crate::elspot::Price;
 use crate::error::{
     ElspotError,
     ElspotResult,
-    RegionError,
-    RegionResult,
 };
-
 use crate::units;
 
 use chrono::{
-    Local,
     Utc,
     DateTime,
     NaiveDate,
-    NaiveDateTime,
-    Duration,
 };
-use chrono_tz::Tz;
-
 use serde::{Deserialize, Serialize};
 use serde_json;
 
 use reqwest;
 
+pub mod currencies;
 pub mod regions;
 pub mod query;
+pub mod states;
 
 pub fn from_json(json_str: &str) -> ElspotResult<MarkedData> {
     MarkedData::new(json_str)
@@ -49,36 +41,30 @@ pub fn from_url(url: &str) -> ElspotResult<MarkedData> {
     from_json(&json_str)
 }
 
-pub fn from_nordpool(date: &str, regions: &Vec<&str>, currency: &str) -> ElspotResult<MarkedData> {
-    let naive_date: NaiveDate = match date {
-        "today" => Local::now().date_naive(),
-        "tomorrow" => (Local::now() + Duration::days(1)).date_naive(),
-        naive_date => NaiveDate::parse_from_str(naive_date,"%Y-%m-%d").unwrap(),
-    };
+pub fn from_nordpool(currency: &str, date: &str, regions: Vec<&str>) -> ElspotResult<MarkedData> {
+    if regions.len() < 1 {
+        return Err(ElspotError::DataPortalDayaheadPricesNoRegionsSupplied);
+    }
 
-    let date = &naive_date.to_string();
+    let mut q = query::QueryOptions::new();
+    q.set_date(date);
+    q.set_currency(currency);
+    q.set_regions(regions);
 
-    let q = query::QueryOptions::new(currency, date, regions);
-    from_url(&q.build())
+    from_url(&q.build_url())
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 struct AreaAverage {
     area_code: regions::Region,
-    price: f32,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-enum State {
-    Preliminary, // This variant might be wrong, must find out later..
-    Final,
+    price: Option<f32>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 struct AreaState {
-    state: State,
+    state: states::State,
     areas: Vec<regions::Region>,
 }
 
@@ -116,7 +102,7 @@ pub struct MarkedData {
     market: String,
     multi_area_entries: Vec<AreaEntries>,
     block_price_aggregates: Vec<PriceAggregates>,
-    currency: String,
+    currency: currencies::Currency,
     exchange_rate: f32,
     area_states: Vec<AreaState>,
     area_averages: Vec<AreaAverage>,
@@ -138,7 +124,7 @@ impl MarkedData {
             }
             Err(e) => {
                 println!("{}", e);
-                Err(ElspotError::MarketdataPage10InvalidJson)
+                Err(ElspotError::DataPortalDayaheadPricesInvalidJson)
             }
         }
     }
@@ -146,7 +132,7 @@ impl MarkedData {
     /// Prices are either final or preliminary.
     pub fn is_preliminary(&self) -> bool {
         for states in self.area_states.iter() {
-            if matches!(states.state, State::Preliminary) {
+            if states.state.is_preliminary() {
                 return true;
             }
         }
@@ -157,36 +143,34 @@ impl MarkedData {
     /// Prints all available `regions` in the price dataset.
     pub fn print_regions(&self) {
         println!("Available regions:");
-        for r in self.delivery_areas.iter() {
-            println!("'{}' ", r);
+        for r in self.multi_area_entries[0].entry_per_area.iter() {
+            println!("{}", r.0);
         }
         println!();
+
     }
 
     /// Returns a Vec<&str> of all available `regions` in the price dataset.
     pub fn regions(&self) -> Vec<&str> {
-        self.delivery_areas
+        self.multi_area_entries[0].entry_per_area
             .iter()
-            .map(|v| v.as_ref())
+            .map(|v| v.0.as_ref())
             .collect()
     }
 
+    /// Check if region exist in dataset.
     pub fn has_region(&self, region: &str) -> bool {
-        if let Err(e) = regions::Region::from_str(region) {
-            panic!("{}: '{}' is not a supported region", e, region);
-        }
-
-        for r in self.delivery_areas.iter() {
-            if r == region {
-                return true;
+        for r in self.multi_area_entries.iter() {
+            if !r.entry_per_area.contains_key(region) {
+                return false;
             }
         }
 
-        false
+        true
     }
 
-    pub fn currency(&self) -> &str {
-        self.currency.as_ref()
+    pub fn currency(&self) -> String {
+        self.currency.to_string()
     }
 
     pub fn date(&self) -> NaiveDate {
@@ -194,16 +178,15 @@ impl MarkedData {
     }
 
     pub fn extract_prices_for_region(&self, region: &str) -> Vec<Price> {
-        if !self.has_region(region) {
-            panic!("'{}' cound not be found", region);
-        }
-
         let mut prices: Vec<Price> = vec![];
+        if !self.has_region(region) {
+            return prices;
+        }
 
         for e in self.multi_area_entries.iter() {
             let v = e.entry_per_area[region].to_string();
 
-            let cu = units::Currency::new(&self.currency).unwrap_or_else(|e| panic!("{}", e));
+            let cu = units::Currency::new(&self.currency.to_string()).unwrap_or_else(|e| panic!("{}", e));
             let pu = units::Power::new("MWh").unwrap_or_else(|e| panic!("{}", e));
             let mtu = units::Mtu::new(e.delivery_start, e.delivery_end).unwrap_or_else(|e| panic!("{}", e));
 
@@ -225,12 +208,15 @@ impl MarkedData {
     }
 
     pub fn extract_prices_all_regions(&self) -> Vec<Vec<Price>> {
-        let mut prices_regions: Vec<Vec<Price>> = vec![];
+        let mut prices_all: Vec<Vec<Price>> = vec![];
         for region in self.delivery_areas.iter() {
-            prices_regions.push(self.extract_prices_for_region(region));
+            let prices = self.extract_prices_for_region(region);
+            if !prices.is_empty() {
+                prices_all.push(prices);
+            }
         }
 
-        prices_regions
+        prices_all
     }
 
     pub fn to_json_string(&self) -> String {
@@ -238,7 +224,7 @@ impl MarkedData {
     }
 
     pub fn to_file(&self, path: &str) {
-        let s = self.to_string();
+        let s = serde_json::to_string(&self).unwrap_or_else(|e| panic!("{}", e));
         fs::write(path, s.as_bytes()).unwrap_or_else(|e| panic!("{}", e));
     }
 }

@@ -175,6 +175,7 @@ impl MarkedData {
             .collect()
     }
 
+    /// Check if region exist in dataset.
     pub fn has_region(&self, region: &str) -> bool {
         let columns = &self.data.Rows[0].Columns;
 
@@ -185,8 +186,8 @@ impl MarkedData {
         res.is_some()
     }
 
-    pub fn currency(&self) -> &str {
-        self.currency.as_ref()
+    pub fn currency(&self) -> String {
+        self.currency.clone()
     }
 
     pub fn date(&self) -> NaiveDate {
@@ -206,17 +207,20 @@ impl MarkedData {
             return vec![];
         }
 
-        let price_hours = PriceHours::new(self.date(), region);
-        let unit_string = &self.data.Units[0];
+        let cur_unit = unit_string::extract_currency_unit(&self.data.Units[0]);
+        let pwr_unit = unit_string::extract_power_unit(&self.data.Units[0]);
         let mut start_time: DateTime<Tz> = dt_tz_from_naive_dt(self.data.Rows[0].StartTime, region);
         let mut end_time: DateTime<Tz> = dt_tz_from_naive_dt(self.data.Rows[0].EndTime, region);
-        let mut prices_region: Vec<Price> = vec![];
+
+        let price_hours = PriceHours::new(self.date(), region);
         match price_hours {
             PriceHours::TwentyThree => assert_eq!(price_hours.as_int(), _prices.len()),
             PriceHours::TwentyFive => assert_eq!(price_hours.as_int(), _prices.len()),
             // PriceHours::TwentyFour if _prices.len() != 24 => assert_eq!(_prices.len(), 25),
             _ => assert_eq!(_prices.len(), 24),
         };
+
+        let mut prices: Vec<Price> = vec![];
 
         for price in _prices {
             if region != "SYS" {
@@ -229,27 +233,27 @@ impl MarkedData {
                 to: end_time.to_utc(),
                 date: self.data.DataStartdate.date(),
                 region: region.to_string(),
-                currency_unit: units::Currency::new(unit_string).unwrap_or_else(|e| panic!("{}", e)),
+                currency_unit: units::Currency::new(cur_unit).unwrap_or_else(|e| panic!("{}", e)),
                 market_time_unit: units::Mtu::Sixty, // Is always 60 minutes for this nordpool api.
-                power_unit: units::Power::new(unit_string).unwrap_or_else(|e| panic!("{}", e)),
+                power_unit: units::Power::new(pwr_unit).unwrap_or_else(|e| panic!("{}", e)),
             };
 
-            prices_region.push(p);
+            prices.push(p);
 
             start_time += Duration::hours(1);
             end_time += Duration::hours(1);
         }
 
-        prices_region
+        prices
     }
 
     pub fn extract_prices_all_regions(&self) -> Vec<Vec<Price>> {
-        let mut prices_regions: Vec<Vec<Price>> = vec![];
+        let mut prices_all: Vec<Vec<Price>> = vec![];
         for region in self.regions() {
-            prices_regions.push(self.extract_prices_for_region(region));
+            prices_all.push(self.extract_prices_for_region(region));
         }
 
-        prices_regions
+        prices_all
     }
 
     pub fn to_json_string(&self) -> String {
@@ -257,7 +261,7 @@ impl MarkedData {
     }
 
     pub fn to_file(&self, path: &str) {
-        let s = self.to_string();
+        let s = serde_json::to_string(&self).unwrap_or_else(|e| panic!("{}", e));
         fs::write(path, s.as_bytes()).unwrap_or_else(|e| panic!("{}", e));
     }
 }

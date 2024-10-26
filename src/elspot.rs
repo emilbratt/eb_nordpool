@@ -35,7 +35,7 @@ impl Price {
         // might in rare cases be rounded the wrong way due to floating point precision errors.
 
         // Test number before starting.
-        self.value.parse::<f32>().unwrap_or_else(|e| panic!("{} '{}' is not parsable to float", e, self.value));
+        self.value.parse::<f32>().unwrap_or_else(|e| panic!("{}: '{}' could not be parsad into float", e, self.value));
 
         let mut split = self.value.split('.');
         let whole_numbers = split.next().unwrap();
@@ -87,15 +87,15 @@ impl Price {
         (dt_region_from_utc_dt(&self.from, &self.region), dt_region_from_utc_dt(&self.to, &self.region))
     }
 
-    pub fn from_to_utc(&self) -> (DateTime<Utc>, DateTime<Utc>) {
+    pub fn from_to_as_utc(&self) -> (DateTime<Utc>, DateTime<Utc>) {
         (self.from, self.to)
     }
 
-    pub fn from_to_region(&self, region: &str) -> (DateTime<Tz>, DateTime<Tz>) {
+    pub fn from_to_with_region(&self, region: &str) -> (DateTime<Tz>, DateTime<Tz>) {
         (dt_region_from_utc_dt(&self.from, region), dt_region_from_utc_dt(&self.to, region))
     }
 
-    pub fn from_to_tz(&self, tz: Tz) -> (DateTime<Tz>, DateTime<Tz>) {
+    pub fn from_to_with_tz(&self, tz: Tz) -> (DateTime<Tz>, DateTime<Tz>) {
         (self.from.with_timezone(&tz), self.to.with_timezone(&tz))
     }
 }
