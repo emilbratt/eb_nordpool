@@ -76,9 +76,9 @@ impl Price {
 
     pub fn price_label(&self) -> String {
         let value = self.as_f32().to_string().replace('.', ",");
-        let currency_unit = self.currency_unit.to_string();
-        let power_unit = self.power_unit.to_string();
-        let country = self.currency_unit.country_code();
+        let currency_unit = self.currency_unit.as_str();
+        let power_unit = self.power_unit.as_str();
+        let country = self.currency_unit.country_code_as_str();
 
         format!("{country} {value} {currency_unit}/{power_unit}")
     }

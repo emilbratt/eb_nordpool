@@ -3,8 +3,6 @@
 //! The reason for this is to preserve the number precision that could otherwise get lost in decimal operations.
 //! This is especially true when doing the division operation.
 
-use std::fmt;
-
 use chrono::{DateTime, Utc};
 
 use crate::elspot;
@@ -25,12 +23,6 @@ pub enum Currency {
     DKK(CurrencyUnit),
     NOK(CurrencyUnit),
     SEK(CurrencyUnit),
-}
-
-impl fmt::Display for Currency {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
 }
 
 impl Currency {
@@ -81,28 +73,28 @@ impl Currency {
         }
     }
 
-    pub fn country_code(&self) -> String {
+    pub fn country_code_as_str(&self) -> &str {
         match self {
-            Self::EUR(_) => String::from("EUR"),
-            Self::DKK(_) => String::from("DKK"),
-            Self::NOK(_) => String::from("NOK"),
-            Self::SEK(_) => String::from("SEK"),
+            Self::EUR(_) => "EUR",
+            Self::DKK(_) => "DKK",
+            Self::NOK(_) => "NOK",
+            Self::SEK(_) => "SEK",
         }
     }
 
-    pub fn to_string(&self) -> String {
+    pub fn as_str(&self) -> &str {
         match self {
-            Self::EUR(CurrencyUnit::Full) => String::from("Eur."),
-            Self::EUR(CurrencyUnit::Fraction) => String::from("Cent"),
+            Self::EUR(CurrencyUnit::Full) => "Eur.",
+            Self::EUR(CurrencyUnit::Fraction) => "Cent",
 
-            Self::DKK(CurrencyUnit::Full) => String::from("Kr."),
-            Self::DKK(CurrencyUnit::Fraction) => String::from("Øre"),
+            Self::DKK(CurrencyUnit::Full) => "Kr.",
+            Self::DKK(CurrencyUnit::Fraction) => "Øre",
 
-            Self::NOK(CurrencyUnit::Full) => String::from("Kr."),
-            Self::NOK(CurrencyUnit::Fraction) => String::from("Øre"),
+            Self::NOK(CurrencyUnit::Full) => "Kr.",
+            Self::NOK(CurrencyUnit::Fraction) => "Øre",
 
-            Self::SEK(CurrencyUnit::Full) => String::from("Kr."),
-            Self::SEK(CurrencyUnit::Fraction) => String::from("Öre"),
+            Self::SEK(CurrencyUnit::Full) => "Kr.",
+            Self::SEK(CurrencyUnit::Fraction) => "Öre",
         }
     }
 }
@@ -142,12 +134,6 @@ pub enum Power {
     kWh,
 }
 
-impl fmt::Display for Power {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
 impl Power {
     pub fn new(pwr_unit: &str) -> UnitResult<Self> {
         // will also handle unit_string that looks like this "EUR/MWh"..
@@ -172,6 +158,13 @@ impl Power {
 
     pub fn is_kwh(&self) -> bool {
         matches!(self, Self::kWh)
+    }
+
+    pub fn as_str(&self) -> &str {
+        match self {
+            Self::MWh => "MWh",
+            Self::kWh => "kWh",
+        }
     }
 }
 
