@@ -15,3 +15,8 @@ Run all tests on source change using the provided script.
 ```sh
 ./run.sh
 ```
+
+Print additional debug info
+```
+EB_NORDPOOL_DEBUG=1 ./run.sh
+```

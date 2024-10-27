@@ -1,16 +1,16 @@
-#![allow(unused)]
-
-use std::fs;
-
+#[allow(unused_imports)]
 use eb_nordpool::{
-    elspot::dataportal_dayaheadprices,
-    error::ElspotError,
+    elspot::{self, dataportal_dayaheadprices},
     units,
 };
 
+#[allow(unused_imports)]
+use chrono::Local;
+
 #[test]
 fn from_file() {
-    let data = dataportal_dayaheadprices::from_file("./tests/data/dataportal_dayaheadprices_NOK.json");
+    let data = elspot::from_file("./tests/data/dataportal_dayaheadprices_NOK.json");
+
     match data {
         Ok(data) => {
             assert!(!data.is_preliminary());
@@ -50,29 +50,31 @@ fn from_file() {
 
 #[test]
 fn to_json_string() {
-    let data = dataportal_dayaheadprices::from_file("./tests/data/dataportal_dayaheadprices_NOK.json").unwrap();
+    let data = elspot::from_file("./tests/data/dataportal_dayaheadprices_NOK.json").unwrap();
 
     // Save data to a string (serialized json).
     let s = data.to_json_string();
 
     // We just reload the string and see if it works, unwrap() will fail if Err.
-    dataportal_dayaheadprices::from_json(&s).unwrap();
+    elspot::from_json(&s).unwrap();
 }
 
 // #[test]
 // fn from_nordpool() {
-//     let date = "2024-10-24";
+//     let date = Local::now().format("%Y-%m-%d").to_string();
 //     let currency = "NOK";
 //     let mut regions: Vec<&str> = vec![];
 //     for region in dataportal_dayaheadprices::regions::SUPPORTED_REGIONS.iter() {
 //         regions.push(region);
 //     }
-//     let data = dataportal_dayaheadprices::from_nordpool(currency, date, regions).unwrap();
-
-//     let mut regions = data.extract_prices_all_regions();
+//     let data = elspot::from_nordpool(currency, &date, regions).unwrap();
+//     let regions = data.extract_prices_all_regions();
 //     for prices in regions.iter() {
 //         for p in prices.iter() {
 //             println!("{}: {}", p.region, p.price_label());
 //         }
 //     }
+//     println!("date: {}", data.date());
+//     println!("currency: {}", data.currency());
+//     println!("is final: {}", data.is_final());
 // }

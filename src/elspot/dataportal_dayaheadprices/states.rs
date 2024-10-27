@@ -8,10 +8,10 @@ pub enum State {
 
 impl State {
     pub fn is_final(&self) -> bool {
-        matches!(self, State::Final)
+        matches!(self, Self::Final)
     }
 
     pub fn is_preliminary(&self) -> bool {
-        matches!(self, State::Preliminary)
+        matches!(self, Self::Preliminary)
     }
 }

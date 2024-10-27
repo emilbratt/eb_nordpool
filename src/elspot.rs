@@ -1,8 +1,15 @@
-use std::fmt;
+use std::{env, fmt, fs};
 
 use chrono::{DateTime, Utc, NaiveDate};
 use chrono_tz::Tz;
 
+use reqwest;
+
+use crate::debug::Debug;
+use crate::error::{
+    ElspotError,
+    ElspotResult,
+};
 use crate::region_time::dt_region_from_utc_dt;
 use crate::units;
 
@@ -98,4 +105,96 @@ impl Price {
     pub fn from_to_with_tz(&self, tz: Tz) -> (DateTime<Tz>, DateTime<Tz>) {
         (self.from.with_timezone(&tz), self.to.with_timezone(&tz))
     }
+}
+
+
+pub trait PriceExtractor {
+    fn new(json_str: &str) -> ElspotResult<Self> where Self: Sized;
+
+    /// Check if prices are final.
+    fn is_final(&self) -> bool;
+
+    /// Check if prices are not finite.
+    fn is_preliminary(&self) -> bool;
+
+    /// Prints all available `regions` in the price dataset.
+    fn print_regions(&self);
+
+    /// Returns a Vec<&str> of all available `regions` in the price dataset.
+    fn regions(&self) -> Vec<&str>;
+
+    /// Check if region exist in dataset.
+    fn has_region(&self, region: &str) -> bool;
+
+    fn currency(&self) -> String;
+
+    fn date(&self) -> NaiveDate;
+
+    fn extract_prices_for_region(&self, region: &str) -> Vec<Price>;
+
+    fn extract_prices_all_regions(&self) -> Vec<Vec<Price>>;
+
+    fn to_json_string(&self) -> String;
+
+    fn to_file(&self, path: &str);
+}
+
+pub fn from_json(json_str: &str) -> ElspotResult<Box<dyn PriceExtractor>> {
+    let debug_enabled = env::var("EB_NORDPOOL_DEBUG").is_ok();
+    let file = "elspot.rs";
+
+    let data = dataportal_dayaheadprices::PriceData::new(&json_str);
+    match data {
+        Ok(data) => return Ok(Box::new(data)),
+        Err(e) => {
+            if debug_enabled {
+                let msg = format!("{}", e);
+                Debug::new(file, &msg).print();
+            }
+        },
+    }
+
+    let data = marketdata_page_10::PriceData::new(&json_str);
+    match data {
+        Ok(data) => return Ok(Box::new(data)),
+        Err(e) => {
+            if debug_enabled {
+                let msg = format!("{}", e);
+                Debug::new(file, &msg).print();
+            }
+        },
+    }
+
+    Err(ElspotError::InvalidInputData)
+}
+
+pub fn from_file(path: &str) -> ElspotResult<Box<dyn PriceExtractor>> {
+    let json_str = fs::read_to_string(path).unwrap();
+
+    from_json(&json_str)
+}
+
+pub fn from_url(url: &str) -> ElspotResult<Box<dyn PriceExtractor>> {
+    let r = reqwest::blocking::get(url).unwrap();
+
+    let json_str = r.text().unwrap();
+
+    from_json(&json_str)
+}
+
+pub fn from_nordpool(currency: &str, date: &str, regions: Vec<&str>) -> ElspotResult<Box<dyn PriceExtractor>> {
+    if regions.is_empty() {
+        return Err(ElspotError::DataPortalDayaheadPricesNoRegionsSupplied);
+    }
+
+    let mut q = dataportal_dayaheadprices::query::QueryOptions::new();
+    q.set_date(date);
+    q.set_currency(currency);
+    q.set_regions(regions);
+
+    let r = reqwest::blocking::get(&q.build_url()).unwrap();
+
+    let json_str = r.text().unwrap();
+
+    from_json(&json_str)
 }

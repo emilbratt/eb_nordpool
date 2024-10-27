@@ -5,6 +5,8 @@ pub type ElspotResult<T> = Result<T, ElspotError>;
 
 #[derive(Debug)]
 pub enum ElspotError {
+    InvalidInputData,
+
     DataPortalDayaheadPricesInvalidJson,
     DataPortalDayaheadPricesInvalidMarket,
     DataPortalDayaheadPricesInvalidVersion,
@@ -26,8 +28,8 @@ pub type RegionResult<T> = Result<T, RegionError>;
 
 #[derive(Debug)]
 pub enum RegionError {
-    RegionIndexNotFound,
-    RegionNotSupported,
+    // RegionIndexNotFound,
+    // RegionNotSupported,
     RegionTzNotSupported,
 }
 

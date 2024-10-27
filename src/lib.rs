@@ -1,21 +1,14 @@
 //! `eb_nordpool` provides an easy way to extract elspot prices from Nordpool.
 
-//! # Working with data from dataportal-api.nordpoolgroup.com/api/DayAheadPrices
+//! # Load data from NordPool
 //!
 //! ```
 //! use eb_nordpool::{
-//!     elspot::dataportal_dayaheadprices,
+//!     elspot::{self, dataportal_dayaheadprices},
 //!     error::ElspotError,
 //!     units,
 //! };
 //!
-//! // Load data from local file.
-//! let data = dataportal_dayaheadprices::from_file("path/to/data.json").unwrap();
-//!
-//! // Load data from json string.
-//! let data = dataportal_dayaheadprices::from_json("{..}").unwrap();
-//!
-//! // Load data directly from nordpool.
 //! // Select date in "YYYY-MM-DD" format.
 //! let date = "2024-10-24";
 //! // Select currency.
@@ -30,50 +23,50 @@
 //! // NOTE: you can easily print out all supported currencies and regions..
 //! dataportal_dayaheadprices::currencies::list_supported();
 //! dataportal_dayaheadprices::regions::list_supported();
+//!
 //! // Finally, download data.
-//! let data = dataportal_dayaheadprices::from_nordpool(currency, date, regions).unwrap();
+//! let data = elspot::from_nordpool(currency, date, regions).unwrap();
 //! ```
 
-//! # Working with data from api/marketdata/page/10
-//!
-//! NOTE: This api is removed, but you might want to work with data already stored on your drive.
+//! # Load data from file, json-string or url
 //!
 //! ```
 //! use eb_nordpool::{
-//!     elspot::marketdata_page_10,
+//!     elspot,
 //!     error::ElspotError,
 //!     units,
 //! };
 //!
 //! // Load data from local file.
-//! let data = marketdata_page_10::from_file("path/to/data.json").unwrap();
+//! let data = elspot::from_file("path/to/data.json").unwrap();
 //!
 //! // Load data from json string.
-//! let data = marketdata_page_10::from_json("{..}").unwrap();
+//! let data = elspot::from_json("{..}").unwrap();
 //!
-//! // Load data from http server.
-//! let data = marketdata_page_10::from_url("http..").unwrap();
+//! // Load data from url.
+//! let data = elspot::from_url("http..").unwrap();
 //! ```
 
-//! # Extracting the data (and more stuff..)
+//! # Extract data (and more stuff..)
 //!
 //! ```
 //! // Once you have loaded the data with one of the two workflows above, we can do stuff.
 //!
 //! // Get all prices for specific region (always in time ascending order starting at 00:00).
 //! let prices = data.extract_prices_for_region("Oslo");
+//! // ..returns a Vec<elspot::Price>
 //!
-//! // Grab a single price.
+//! // Get price as &str.
 //! let p = &prices[8];
-//! // Get the price value as String.
 //! let v = &p.value;
-//! // Pretty print price (label like). Looks like this: "NOK 167,68 Kr./MWh".
-//! println!("{}", p.price_label());
-//!
 //! // Get price as numeric data types.
 //! let p = &prices[8];
 //! let f = p.as_f32();
 //! let i = p.as_i32();
+//!
+//! // Pretty print price (label like). Looks like this: "NOK 167,68 Kr./MWh".
+//! let p = &prices[8];
+//! println!("{}", p.price_label());
 //!
 //! // Get time window (from and to) for a price in chrono's datetime type.
 //! let p = &prices[0];
@@ -95,7 +88,7 @@
 //!     // To smaller power unit (from "MWh" to "kWh").
 //!     units::convert_to_kwh(&mut p);
 //!
-//!     // And back again.
+//!     // And back again (uncomment lines below..).
 //!     // units::convert_to_currency_full(&mut p);
 //!     // units::convert_to_mwh(&mut p);
 //! }
@@ -144,3 +137,4 @@ pub mod elspot;
 pub mod error;
 pub mod region_time;
 pub mod units;
+pub mod debug;

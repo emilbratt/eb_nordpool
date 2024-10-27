@@ -1,11 +1,10 @@
-use std::{fs, fmt};
+use std::{env, fs, fmt};
 
-use crate::elspot::Price;
+use crate::debug::Debug;
+use crate::elspot::{PriceExtractor, Price};
 use crate::error::{
     ElspotError,
     ElspotResult,
-    RegionError,
-    RegionResult,
 };
 use crate::region_time::dt_tz_from_naive_dt;
 use crate::units;
@@ -21,64 +20,15 @@ use chrono_tz::Tz;
 use serde::{Deserialize, Serialize};
 use serde_json;
 
-use reqwest;
-
 mod hour_count;
 mod unit_string;
 
-const NORDPOOL_URL_EUR: &str = "https://www.nordpoolgroup.com/api/marketdata/page/10?currency=EUR";
-const NORDPOOL_URL_DKK: &str = "https://www.nordpoolgroup.com/api/marketdata/page/10?currency=DKK";
-const NORDPOOL_URL_NOK: &str = "https://www.nordpoolgroup.com/api/marketdata/page/10?currency=NOK";
-const NORDPOOL_URL_SEK: &str = "https://www.nordpoolgroup.com/api/marketdata/page/10?currency=SEK";
-
-pub fn from_json(json_str: &str) -> ElspotResult<MarkedData> {
-    MarkedData::new(json_str)
-}
-
-pub fn from_file(path: &str) -> ElspotResult<MarkedData> {
-    let json_str = fs::read_to_string(path).unwrap();
-
-    from_json(&json_str)
-}
-
-pub fn from_url(url: &str) -> ElspotResult<MarkedData> {
+pub fn from_url(url: &str) -> ElspotResult<PriceData> {
     let r = reqwest::blocking::get(url).unwrap();
 
     let json_str = r.text().unwrap();
 
-    from_json(&json_str)
-}
-
-#[deprecated(
-    since="0.1.6",
-    note="`https://www.nordpoolgroup.com/api/marketdata/page/10?currency=EUR` was removed, use from_url() instead"
-)]
-pub fn from_nordpool_eur() -> ElspotResult<MarkedData> {
-    from_url(NORDPOOL_URL_EUR)
-}
-
-#[deprecated(
-    since="0.1.6",
-    note="`https://www.nordpoolgroup.com/api/marketdata/page/10?currency=DKK` was removed, use from_url() instead"
-)]
-pub fn from_nordpool_dkk() -> ElspotResult<MarkedData> {
-    from_url(NORDPOOL_URL_DKK)
-}
-
-#[deprecated(
-    since="0.1.6",
-    note="`https://www.nordpoolgroup.com/api/marketdata/page/10?currency=NOK` was removed, use from_url() instead"
-)]
-pub fn from_nordpool_nok() -> ElspotResult<MarkedData> {
-    from_url(NORDPOOL_URL_NOK)
-}
-
-#[deprecated(
-    since="0.1.6",
-    note="`https://www.nordpoolgroup.com/api/marketdata/page/10?currency=SEK` was removed, use from_url() instead"
-)]
-pub fn from_nordpool_sek() -> ElspotResult<MarkedData> {
-    from_url(NORDPOOL_URL_SEK)
+    PriceData::new(&json_str)
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -107,14 +57,14 @@ struct Data {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")] // re-format the name "pageId" from input data to "page_id" used in the struct.
-pub struct MarkedData {
+pub struct PriceData {
     data: Data,
     currency: String,
     page_id: usize,
 }
 
-impl MarkedData {
-    pub fn new(json_str: &str) -> ElspotResult<Self> {
+impl PriceExtractor for PriceData {
+    fn new(json_str: &str) -> ElspotResult<Self> {
         match serde_json::from_str::<Self>(json_str) {
             Ok(data) => {
                 // Page id for hourly elspot is 10.
@@ -135,37 +85,30 @@ impl MarkedData {
 
                 Ok(data)
             }
-            Err(_) => {
+            Err(e) => {
+                if env::var("EB_NORDPOOL_DEBUG").is_ok() {
+                    let file = "elspot/marketdata_page_10.rs";
+                    let msg = format!("serde_json: {}", e);
+                    Debug::new(file, &msg).print();
+                }
                 Err(ElspotError::MarketdataPage10InvalidJson)
             }
         }
     }
 
-    fn col_index_for_region(&self, region: &str) -> RegionResult<usize> {
-        let columns = &self.data.Rows[0].Columns;
-
-        let res: Option<&ColEntry> = columns
-            .iter()
-            .find(|v| v.Name == region);
-
-        match res {
-            Some(v) => Ok(v.Index.into()),
-            None => Err(RegionError::RegionIndexNotFound),
-        }
-    }
 
     /// Check if prices are final.
-    pub fn is_final(&self) -> bool {
+    fn is_final(&self) -> bool {
         !self.data.ContainsPreliminaryValues
     }
 
     /// Check if prices are not finite.
-    pub fn is_preliminary(&self) -> bool {
+    fn is_preliminary(&self) -> bool {
         self.data.ContainsPreliminaryValues
     }
 
     /// Prints all available `regions` in the price dataset.
-    pub fn print_regions(&self) {
+    fn print_regions(&self) {
         println!("Available regions:");
         for col in &self.data.Rows[0].Columns {
             println!("'{}' ", col.Name);
@@ -174,7 +117,7 @@ impl MarkedData {
     }
 
     /// Returns a Vec<&str> of all available `regions` in the price dataset.
-    pub fn regions(&self) -> Vec<&str> {
+    fn regions(&self) -> Vec<&str> {
         self.data.Rows[0].Columns
             .iter()
             .map(|col| col.Name.as_ref())
@@ -182,7 +125,7 @@ impl MarkedData {
     }
 
     /// Check if region exist in dataset.
-    pub fn has_region(&self, region: &str) -> bool {
+    fn has_region(&self, region: &str) -> bool {
         let columns = &self.data.Rows[0].Columns;
 
         let res: Option<&ColEntry> = columns
@@ -192,16 +135,23 @@ impl MarkedData {
         res.is_some()
     }
 
-    pub fn currency(&self) -> String {
+    fn currency(&self) -> String {
         self.currency.clone()
     }
 
-    pub fn date(&self) -> NaiveDate {
+    fn date(&self) -> NaiveDate {
         self.data.DataStartdate.date()
     }
 
-    pub fn extract_prices_for_region(&self, region: &str) -> Vec<Price> {
-        let index_for_region = self.col_index_for_region(region).unwrap_or_else(|e| panic!("{}", e));
+    fn extract_prices_for_region(&self, region: &str) -> Vec<Price> {
+        let res: Option<&ColEntry> = self.data.Rows[0].Columns
+            .iter()
+            .find(|v| v.Name == region);
+
+        let index_for_region: usize = match res {
+            Some(v) => v.Index.into(),
+            None => panic!(),
+        };
 
         // Extract all price values into a simple vector, exluding non-price values.
         let _prices: Vec<&ColEntry> = self.data.Rows
@@ -261,7 +211,7 @@ impl MarkedData {
         prices
     }
 
-    pub fn extract_prices_all_regions(&self) -> Vec<Vec<Price>> {
+    fn extract_prices_all_regions(&self) -> Vec<Vec<Price>> {
         let mut prices_all: Vec<Vec<Price>> = vec![];
         for region in self.regions() {
             prices_all.push(self.extract_prices_for_region(region));
@@ -270,17 +220,17 @@ impl MarkedData {
         prices_all
     }
 
-    pub fn to_json_string(&self) -> String {
+    fn to_json_string(&self) -> String {
         serde_json::to_string(&self).unwrap_or_else(|e| panic!("{}", e))
     }
 
-    pub fn to_file(&self, path: &str) {
+    fn to_file(&self, path: &str) {
         let s = serde_json::to_string(&self).unwrap_or_else(|e| panic!("{}", e));
         fs::write(path, s.as_bytes()).unwrap_or_else(|e| panic!("{}", e));
     }
 }
 
-impl fmt::Display for MarkedData {
+impl fmt::Display for PriceData {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
