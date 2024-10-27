@@ -3,7 +3,7 @@ use crate::error::{
     RegionResult
 };
 
-use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc, Timelike, Duration};
+use chrono::{DateTime, NaiveDateTime, Utc};
 
 use chrono_tz::{
     Tz,
@@ -24,8 +24,8 @@ use chrono_tz::{
     }
 };
 
-const NORDPOOL_TZ_REGION: &str = "Oslo";
-fn tz_from_region(region: &str) -> RegionResult<Tz> {
+// const NORDPOOL_TZ_REGION: &str = "Oslo";
+pub fn tz_from_region(region: &str) -> RegionResult<Tz> {
     match region {
         // Nordic
         "Oslo" | "Bergen" | "Kr.sand" | "Molde" | "Tr.heim" | "Tromsø" => Ok(Oslo),
@@ -49,44 +49,6 @@ fn tz_from_region(region: &str) -> RegionResult<Tz> {
         // System
         "SYS" => Ok(UTC),
         _ => Err(RegionError::RegionTzNotSupported),
-    }
-}
-
-/// Used to find out how many hours in the day for price data.
-/// It is always 24 hours.., except when it is 23 or 25 hours.
-/// For example, in spring we handle the transition from cet to cest.
-pub enum PriceHours {
-    TwentyThree,
-    TwentyFour,
-    TwentyFive,
-}
-
-impl PriceHours {
-    pub fn new(d: NaiveDate, region: &str) -> Self {
-        let region = if region == "SYS" {
-            NORDPOOL_TZ_REGION
-        } else {
-            region
-        };
-
-        let dt: DateTime<Tz> = match tz_from_region(&region) {
-            Ok(tz) => NaiveDateTime::from(d).and_local_timezone(tz).unwrap(),
-            Err(e) => panic!("{:?}", e),
-        };
-
-        match dt.with_hour(0) {
-            Some(dt) if (dt+Duration::hours(23)).hour() == 0 => PriceHours::TwentyThree,
-            Some(dt) if (dt+Duration::hours(25)).hour() == 0 => PriceHours::TwentyFive,
-            _ => PriceHours::TwentyFour,
-        }
-    }
-
-    pub fn as_int(&self) -> usize {
-        match self {
-            Self::TwentyThree => 23,
-            Self::TwentyFour => 24,
-            Self::TwentyFive => 25,
-        }
     }
 }
 

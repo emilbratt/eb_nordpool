@@ -7,7 +7,7 @@ use crate::error::{
     RegionError,
     RegionResult,
 };
-use crate::region_time::{dt_tz_from_naive_dt, PriceHours};
+use crate::region_time::dt_tz_from_naive_dt;
 use crate::units;
 
 use chrono::{
@@ -23,6 +23,7 @@ use serde_json;
 
 use reqwest;
 
+mod hour_count;
 mod unit_string;
 
 const NORDPOOL_URL_EUR: &str = "https://www.nordpoolgroup.com/api/marketdata/page/10?currency=EUR";
@@ -202,28 +203,36 @@ impl MarkedData {
     pub fn extract_prices_for_region(&self, region: &str) -> Vec<Price> {
         let index_for_region = self.col_index_for_region(region).unwrap_or_else(|e| panic!("{}", e));
 
+        // Extract all price values into a simple vector, exluding non-price values.
         let _prices: Vec<&ColEntry> = self.data.Rows
             .iter()
             .filter(|&row| !&row.IsExtraRow && &row.Columns[index_for_region].Value != "-")
             .map(|row| &row.Columns[index_for_region])
             .collect();
 
-        if _prices.is_empty() {
-            return vec![];
+
+        let hour_count = hour_count::Hours::new(self.date(), region);
+
+        // Verify that the amount of prices extracted matches the hours in a day.
+        match _prices.len() {
+            0 => return vec![], // no prices where found, that is ok.
+            23 => assert!(matches!(hour_count, hour_count::Hours::TwentyThree)),
+            25 => assert!(matches!(hour_count, hour_count::Hours::TwentyFive)),
+            24 => assert!(matches!(hour_count, hour_count::Hours::TwentyFour)),
+            n => panic!("Weird price count: {}", n),
         }
 
+        // Now we can start assembling the real price data.
         let cur_unit = unit_string::extract_currency_unit(&self.data.Units[0]);
+        let e_cur_unit = units::Currency::new(cur_unit).unwrap_or_else(|e| panic!("{}", e));
+
         let pwr_unit = unit_string::extract_power_unit(&self.data.Units[0]);
+        let e_pwr_unit = units::Power::new(pwr_unit).unwrap_or_else(|e| panic!("{}", e));
+
+        let mtu = units::Mtu::Sixty; // Is always 60 minutes for this nordpool api.
+
         let mut start_time: DateTime<Tz> = dt_tz_from_naive_dt(self.data.Rows[0].StartTime, region);
         let mut end_time: DateTime<Tz> = dt_tz_from_naive_dt(self.data.Rows[0].EndTime, region);
-
-        let price_hours = PriceHours::new(self.date(), region);
-        match price_hours {
-            PriceHours::TwentyThree => assert_eq!(price_hours.as_int(), _prices.len()),
-            PriceHours::TwentyFive => assert_eq!(price_hours.as_int(), _prices.len()),
-            // PriceHours::TwentyFour if _prices.len() != 24 => assert_eq!(_prices.len(), 25),
-            _ => assert_eq!(_prices.len(), 24),
-        };
 
         let mut prices: Vec<Price> = vec![];
 
@@ -238,9 +247,9 @@ impl MarkedData {
                 to: end_time.to_utc(),
                 date: self.data.DataStartdate.date(),
                 region: region.to_string(),
-                currency_unit: units::Currency::new(cur_unit).unwrap_or_else(|e| panic!("{}", e)),
-                market_time_unit: units::Mtu::Sixty, // Is always 60 minutes for this nordpool api.
-                power_unit: units::Power::new(pwr_unit).unwrap_or_else(|e| panic!("{}", e)),
+                currency_unit: e_cur_unit.clone(),
+                market_time_unit: mtu.clone(),
+                power_unit: e_pwr_unit.clone(),
             };
 
             prices.push(p);
