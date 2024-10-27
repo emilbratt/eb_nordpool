@@ -59,28 +59,24 @@ impl <'a>QueryOptions<'a> {
 
     pub fn build_url(&self) -> String {
         let date = match self.date {
-            None => panic!("No date was set, use .set_date(date) to set a specific date"),
+            None => panic!("No date was set"),
             Some(date) => date,
         };
 
         let currency = match self.currency {
-            None => panic!("No currency was set, use .set_currency(currency) to set a specific currency"),
+            None => panic!("No currency was set"),
             Some(currency) => currency,
         };
 
-        if self.regions.len() == 0 {
-            panic!("No regions set, use .add_region(region) to add 1 or more regions");
-        }
-
-        let mut regions = String::from(self.regions[0]);
-        for i in 1..self.regions.len() {
-            regions.push_str(format!(",{}", self.regions[i]).as_ref());
-        }
+        let regions = match self.regions.is_empty() {
+            true => panic!("No regions where added"),
+            false => self.regions.join(","),
+        };
 
         let mut url = Url::parse(NORDPOOL_BASE_URL).unwrap();
+        url.query_pairs_mut().append_pair("market", "DayAhead");
         url.query_pairs_mut().append_pair("currency", currency);
         url.query_pairs_mut().append_pair("date", date);
-        url.query_pairs_mut().append_pair("market", "DayAhead");
         url.query_pairs_mut().append_pair("deliveryArea", regions.as_ref());
 
         url.as_str().to_string()

@@ -43,7 +43,7 @@ pub fn from_url(url: &str) -> ElspotResult<MarkedData> {
 }
 
 pub fn from_nordpool(currency: &str, date: &str, regions: Vec<&str>) -> ElspotResult<MarkedData> {
-    if regions.len() < 1 {
+    if regions.is_empty() {
         return Err(ElspotError::DataPortalDayaheadPricesNoRegionsSupplied);
     }
 
