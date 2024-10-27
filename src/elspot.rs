@@ -143,7 +143,7 @@ pub fn from_json(json_str: &str) -> ElspotResult<Box<dyn PriceExtractor>> {
     let debug_enabled = env::var("EB_NORDPOOL_DEBUG").is_ok();
     let file = "elspot.rs";
 
-    let data = dataportal_dayaheadprices::PriceData::new(&json_str);
+    let data = dataportal_dayaheadprices::PriceData::new(json_str);
     match data {
         Ok(data) => return Ok(Box::new(data)),
         Err(e) => {
@@ -154,7 +154,7 @@ pub fn from_json(json_str: &str) -> ElspotResult<Box<dyn PriceExtractor>> {
         },
     }
 
-    let data = marketdata_page_10::PriceData::new(&json_str);
+    let data = marketdata_page_10::PriceData::new(json_str);
     match data {
         Ok(data) => return Ok(Box::new(data)),
         Err(e) => {

@@ -198,7 +198,7 @@ impl PriceExtractor for PriceData {
                 date: self.data.DataStartdate.date(),
                 region: region.to_string(),
                 currency_unit: e_cur_unit.clone(),
-                market_time_unit: mtu.clone(),
+                market_time_unit: mtu,
                 power_unit: e_pwr_unit.clone(),
             };
 

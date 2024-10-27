@@ -26,7 +26,7 @@ impl Hours {
             region
         };
 
-        let dt: DateTime<Tz> = match tz_from_region(&region) {
+        let dt: DateTime<Tz> = match tz_from_region(region) {
             Ok(tz) => NaiveDateTime::from(d).and_local_timezone(tz).unwrap(),
             Err(e) => panic!("{:?}", e),
         };
