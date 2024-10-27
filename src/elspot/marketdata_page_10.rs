@@ -242,7 +242,7 @@ impl MarkedData {
             }
 
             let p = Price {
-                value: price.Value.to_string().replace(',', "."),
+                value: price.Value.to_string().replace(',', ".").replace(' ', ""),
                 from: start_time.to_utc(),
                 to: end_time.to_utc(),
                 date: self.data.DataStartdate.date(),
