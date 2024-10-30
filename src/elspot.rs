@@ -37,9 +37,11 @@ impl fmt::Display for Price {
 
 impl Price {
     pub fn as_f32(&self) -> f32 {
-        // This function will try its best to round the floating point number to the correct value.
+        // Since we are working with money, we want to round to 2 decimals.
+        // This function will try its best to round the floating point number in the right direction.
         // Large numbers (including negative) or numbers with many fractional digits,
         // might in rare cases be rounded the wrong way due to floating point precision errors.
+        // The rounding error is marginal and I consider this an OK trade off for not using fixed point calculation.
 
         // Test number before starting.
         self.value.parse::<f32>().unwrap_or_else(|e| panic!("{}: '{}' could not be parsad into float", e, self.value));
