@@ -194,7 +194,7 @@ pub fn from_nordpool(currency: &str, date: &str, regions: Vec<&str>) -> ElspotRe
     q.set_currency(currency);
     q.set_regions(regions);
 
-    let r = reqwest::blocking::get(&q.build_url()).unwrap();
+    let r = reqwest::blocking::get(q.build_url()).unwrap();
 
     let json_str = r.text().unwrap();
 

@@ -162,11 +162,11 @@ impl PriceExtractor for PriceData {
     }
 
     fn extract_prices_for_region(&self, region: &str) -> Vec<Price> {
-        let mut prices: Vec<Price> = vec![];
         if !self.has_region(region) {
-            return prices;
+            return vec![];
         }
 
+        let mut prices: Vec<Price> = Vec::with_capacity(100);
         for e in self.multi_area_entries.iter() {
             let v = e.entry_per_area[region].to_string();
 

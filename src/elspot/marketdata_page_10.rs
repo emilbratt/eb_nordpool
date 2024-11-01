@@ -184,7 +184,7 @@ impl PriceExtractor for PriceData {
         let mut start_time: DateTime<Tz> = dt_tz_from_naive_dt(self.data.Rows[0].StartTime, region);
         let mut end_time: DateTime<Tz> = dt_tz_from_naive_dt(self.data.Rows[0].EndTime, region);
 
-        let mut prices: Vec<Price> = vec![];
+        let mut prices: Vec<Price> = Vec::with_capacity(_prices.len());
 
         for price in _prices {
             if region != "SYS" {
