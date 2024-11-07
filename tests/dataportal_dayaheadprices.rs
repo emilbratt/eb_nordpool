@@ -1,8 +1,4 @@
-#[allow(unused_imports)]
-use eb_nordpool::{
-    elspot::{self, dataportal_dayaheadprices},
-    units,
-};
+use eb_nordpool::{elspot, units};
 
 #[allow(unused_imports)]
 use chrono::Local;
@@ -59,22 +55,3 @@ fn to_json_string() {
     elspot::from_json(&s).unwrap();
 }
 
-// #[test]
-// fn from_nordpool() {
-//     let date = Local::now().format("%Y-%m-%d").to_string();
-//     let currency = "NOK";
-//     let mut regions: Vec<&str> = vec![];
-//     for region in dataportal_dayaheadprices::regions::SUPPORTED_REGIONS.iter() {
-//         regions.push(region);
-//     }
-//     let data = elspot::from_nordpool(currency, &date, regions).unwrap();
-//     let regions = data.extract_prices_all_regions();
-//     for prices in regions.iter() {
-//         for p in prices.iter() {
-//             println!("{}: {}", p.region, p.price_label());
-//         }
-//     }
-//     println!("date: {}", data.date());
-//     println!("currency: {}", data.currency());
-//     println!("is final: {}", data.is_final());
-// }

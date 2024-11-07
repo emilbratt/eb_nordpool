@@ -19,8 +19,8 @@ pub mod marketdata_page_10;
 /// Each price returned comes in the form of this datatype.
 #[derive(Clone, Debug)]
 pub struct Price {
-    from: DateTime<Utc>,
-    to: DateTime<Utc>,
+    pub from: DateTime<Utc>,
+    pub to: DateTime<Utc>,
     pub date: NaiveDate,
     pub region: String,
     pub value: String,
@@ -177,9 +177,9 @@ pub fn from_file(path: &str) -> ElspotResult<Box<dyn PriceExtractor>> {
 }
 
 pub fn from_url(url: &str) -> ElspotResult<Box<dyn PriceExtractor>> {
-    let r = reqwest::blocking::get(url).unwrap();
+    let r = reqwest::blocking::get(url).unwrap_or_else(|e| panic!("{}: could not load url '{}", e, url));
 
-    let json_str = r.text().unwrap();
+    let json_str = r.text().unwrap_or_else(|e| panic!("{}", e));
 
     from_json(&json_str)
 }
@@ -194,9 +194,7 @@ pub fn from_nordpool(currency: &str, date: &str, regions: Vec<&str>) -> ElspotRe
     q.set_currency(currency);
     q.set_regions(regions);
 
-    let r = reqwest::blocking::get(q.build_url()).unwrap();
+    let url = q.build_url();
 
-    let json_str = r.text().unwrap();
-
-    from_json(&json_str)
+    from_url(&url)
 }

@@ -204,11 +204,20 @@ fn move_comma_left(value: &mut String, moves: usize) {
         value.remove(0);
     }
 
+    let is_negative = value.starts_with('-');
+    if is_negative {
+        value.remove(0);
+    }
+
     if let Some(i) = value.find('.') {
         value.remove(i);
         if i <= moves {
             value.insert_str(0, "0".repeat(moves-i).as_ref());
-            value.insert_str(0, "0.");
+            if is_negative {
+                value.insert_str(0, "-0.");
+            } else {
+                value.insert_str(0, "0.");
+            }
         } else {
             value.insert(i-moves, '.');
         }
@@ -228,6 +237,10 @@ fn move_comma_left(value: &mut String, moves: usize) {
         }
 
         value.insert(value.len()-moves, '.');
+
+        if is_negative {
+            value.insert_str(0, "-");
+        }
     }
 }
 

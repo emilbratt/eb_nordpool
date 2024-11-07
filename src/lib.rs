@@ -68,17 +68,20 @@
 //! let p = &prices[8];
 //! println!("{}", p.price_label());
 //!
-//! // Get time window (from and to) for a price in chrono's datetime type.
+//! // Get time window (from and to) for specific price in chrono's datetime type.
 //! let p = &prices[0];
-//! // Adjusted for same timezone as the region for the prices.
+//! // Access values directly (Datetime in Utc).
+//! let from = p.from;
+//! let to = p.to;
+//! // Get "from" and "to" adjusted for same timezone as the region for the prices.
 //! let (from, to) = p.from_to();
-//! // Adjusted for Utc.
-//! let (from_utc, to_utc) = p.from_to_as_utc();
-//! // Adjusted for region, for example Finland using region code "FI".
-//! let (from_r, to_r) = p.from_to_with_region("FI");
-//! // Adjusted for any timezone, for example Los Angeles using chrono_tz's tz type.
+//! // Get "from" and "to" adjusted for Utc.
+//! let (from_utc_time, to_utc_time) = p.from_to_as_utc();
+//! // Get "from" and "to" adjusted for region, for example Finland using region code "FI".
+//! let (from_region_time, to_region_time) = p.from_to_with_region("FI");
+//! // Get "from" and "to" adjusted for any timezone, for example Los Angeles using chrono_tz's tz type.
 //! use chrono_tz::America::Los_Angeles;
-//! let (from_la, to_la) = p.from_to_with_tz(Los_Angeles);
+//! let (from_la_time, to_la_time) = p.from_to_with_tz(Los_Angeles);
 //!
 //! // Convert to other units (includes changing price value to accommodate for new units).
 //! let mut prices = data.extract_prices_for_region("Oslo");

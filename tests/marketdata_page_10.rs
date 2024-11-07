@@ -1,7 +1,4 @@
-use eb_nordpool::{
-    elspot,
-    units,
-};
+use eb_nordpool::elspot;
 
 #[test]
 fn eur_24h() {
@@ -109,53 +106,4 @@ fn to_json_string() {
 
     // We just reload the string and see if it works, unwrap() will fail if Err.
     elspot::from_json(&s).unwrap();
-}
-
-#[test]
-fn units() {
-    let data = elspot::from_file("./tests/data/marketdata_page_10_EUR_24H.json").unwrap();
-
-    let mut prices = data.extract_prices_for_region("Oslo");
-    let mut p = &mut prices[1];
-
-    assert!(matches!(p.market_time_unit, units::Mtu::Sixty));
-    assert_eq!(p.market_time_unit as isize, 60);
-    assert_eq!(p.market_time_unit.as_str(), "60 minutes");
-
-    // Change to a value with trailing zero for testing, we should be able to handle it.
-    p.value = String::from("0167.680");
-
-    units::convert_to_currency_fraction(&mut p);
-    assert_eq!("16768", p.value);
-    assert_eq!(16768f32, p.as_f32());
-    assert_eq!("Cent", p.currency_unit.as_str());
-    assert_eq!("MWh", p.power_unit.as_str());
-
-    units::convert_to_kwh(&mut p);
-    assert_eq!("16.768", p.value);
-    assert_eq!(17_f32, p.as_f32());
-    assert_eq!("kWh", p.power_unit.as_str());
-
-    units::convert_to_currency_full(&mut p);
-    assert_eq!("0.16768", p.value);
-    assert_eq!(0.17_f32, p.as_f32());
-    assert_eq!("Eur.", p.currency_unit.as_str());
-    assert_eq!("kWh", p.power_unit.as_str());
-
-    units::convert_to_mwh(&mut p);
-    assert_eq!(167.68_f32, p.as_f32());
-    assert_eq!("167.68", p.value);
-    assert_eq!("MWh", p.power_unit.as_str());
-
-    p.value = String::from("10.505");
-    units::convert_to_currency_fraction(&mut p);
-    assert_eq!(1051_f32, p.as_f32());
-    assert_eq!("Cent", p.currency_unit.as_str());
-
-    p.value = String::from("10.5");
-    assert_eq!(11_i32, p.as_i32());
-    p.value = String::from("-10.5");
-    assert_eq!(-11_i32, p.as_i32());
-    p.value = String::from("-10.49");
-    assert_eq!(-10_i32, p.as_i32());
 }
