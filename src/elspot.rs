@@ -36,7 +36,7 @@ impl fmt::Display for Price {
 }
 
 impl Price {
-    pub fn as_f32(&self) -> f32 {
+    fn formatted_decimal(&self) -> String {
         // Since we are working with money, we want to round to 2 decimals.
         // This function will try its best to round the floating point number in the right direction.
         // Large numbers (including negative) or numbers with many fractional digits,
@@ -50,33 +50,53 @@ impl Price {
         let whole_numbers = split.next().unwrap();
         match split.next() {
             Some("") | None => {
-                whole_numbers.parse::<f32>().unwrap()
+                whole_numbers.to_string()
             }
             Some(fractions) => {
-                let formatted: String = if fractions.len() > 3 {
+                if fractions.len() > 3 {
                     // Only keep at most 3 fractions, the 3rd is for rounding and fixes some rounding errors.
-                    format!("{}.{}", whole_numbers, &fractions.to_string()[..3])
+                    format!("{}.{}", whole_numbers, &fractions.to_string()[..3]).to_string()
                 } else {
-                    format!("{}.{}", whole_numbers, fractions)
-                };
-
-                let f32_parsed = formatted.parse::<f32>().unwrap();
-
-                // Only keep two decimal places fractions.
-                let f32_two_decimals = (f32_parsed * 100.0).round() / 100.0;
-
-                if self.currency_unit.is_fraction() {
-                    // Currency sub-unit does not use fractions, we round all the way up.
-                    f32_two_decimals.round()
-                } else {
-                    f32_two_decimals
+                    format!("{}.{}", whole_numbers, fractions).to_string()
                 }
             }
         }
     }
 
+    pub fn as_f32(&self) -> f32 {
+        let v_f32 = self.formatted_decimal().parse::<f32>().unwrap();
+
+        // Only keep two decimal places..
+        let v_f32 = (v_f32 * 100.0).round() / 100.0;
+
+        if self.currency_unit.is_fraction() {
+            // Currency sub-unit does not use fractions, we round all the way up.
+            v_f32.round()
+        } else {
+            v_f32
+        }
+    }
+
     pub fn as_i32(&self) -> i32 {
         self.as_f32().round() as i32
+    }
+
+    pub fn as_f64(&self) -> f64 {
+        let v_f64 = self.formatted_decimal().parse::<f64>().unwrap();
+
+        // Only keep two decimal places..
+        let v_f64 = (v_f64 * 100.0).round() / 100.0;
+
+        if self.currency_unit.is_fraction() {
+            // Currency sub-unit does not use fractions, we round all the way up.
+            v_f64.round()
+        } else {
+            v_f64
+        }
+    }
+
+    pub fn as_i64(&self) -> i64 {
+        self.as_f64().round() as i64
     }
 
     pub fn hour(&self) -> String {
@@ -147,13 +167,15 @@ pub fn from_json(json_str: &str) -> ElspotResult<Box<dyn PriceExtractor>> {
 
     let data = dataportal_dayaheadprices::PriceData::new(json_str);
     match data {
-        Ok(data) => return Ok(Box::new(data)),
+        Ok(data) => {
+            return Ok(Box::new(data))
+        }
         Err(e) => {
             if debug_enabled {
                 let msg = format!("{}", e);
                 Debug::new(file, &msg).print();
             }
-        },
+        }
     }
 
     let data = marketdata_page_10::PriceData::new(json_str);
