@@ -4,7 +4,6 @@ use crate::error::{
 };
 
 use chrono::{DateTime, NaiveDateTime, Utc};
-
 use chrono_tz::{
     Tz,
     Etc::UTC, // "Etcetera" -> "UTC": some timezones cannot be attributed to any area..

@@ -1,8 +1,8 @@
 use chrono::NaiveDate;
 use url::Url;
 
-use crate::elspot::dataportal_dayaheadprices::currencies::SUPPORTED_CURRENCIES;
-use crate::elspot::dataportal_dayaheadprices::regions::SUPPORTED_REGIONS;
+use super::currencies::SUPPORTED_CURRENCIES;
+use super::regions::SUPPORTED_REGIONS;
 
 const NORDPOOL_BASE_URL: &str = "https://dataportal-api.nordpoolgroup.com/api/DayAheadPrices";
 

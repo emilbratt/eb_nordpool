@@ -1,21 +1,23 @@
 use std::{env, fs, fmt};
 use std::collections::HashMap;
 
+use chrono::{
+    Utc,
+    DateTime,
+    NaiveDate,
+};
+
+use serde::{Deserialize, Serialize};
+use serde_json;
+
 use crate::debug::Debug;
-use crate::elspot::{PriceExtractor, Price};
 use crate::error::{
     ElspotError,
     ElspotResult,
 };
 use crate::units;
 
-use chrono::{
-    Utc,
-    DateTime,
-    NaiveDate,
-};
-use serde::{Deserialize, Serialize};
-use serde_json;
+use super::{PriceExtractor, Price};
 
 pub mod currencies;
 pub mod regions;
