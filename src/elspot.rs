@@ -44,7 +44,7 @@ impl Price {
         // The rounding error is marginal and I consider this an OK trade off for not using fixed point calculation.
 
         // Test number before starting.
-        self.value.parse::<f32>().unwrap_or_else(|e| panic!("{}: '{}' could not be parsad into float", e, self.value));
+        self.value.parse::<f64>().unwrap_or_else(|e| panic!("{}: '{}' could not be parsad into float", e, self.value));
 
         let mut split = self.value.split('.');
         let whole_numbers = split.next().unwrap();

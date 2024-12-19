@@ -49,9 +49,8 @@
 
 //! # Extract data (and more stuff..)
 //!
+//! Once you have loaded the data with one of the two workflows above, we can do stuff.
 //! ```
-//! // Once you have loaded the data with one of the two workflows above, we can do stuff.
-//!
 //! // Get all prices for specific region (always in time ascending order starting at 00:00).
 //! let prices = data.extract_prices_for_region("Oslo");
 //! // ..returns a Vec<elspot::Price>
