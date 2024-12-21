@@ -22,6 +22,7 @@ pub enum Currency {
     EUR(CurrencyUnit),
     DKK(CurrencyUnit),
     NOK(CurrencyUnit),
+    PLN(CurrencyUnit),
     SEK(CurrencyUnit),
 }
 
@@ -32,6 +33,7 @@ impl Currency {
             "EUR" => Ok(Self::EUR(CurrencyUnit::Full)),
             "DKK" => Ok(Self::DKK(CurrencyUnit::Full)),
             "NOK" => Ok(Self::NOK(CurrencyUnit::Full)),
+            "PLN" => Ok(Self::PLN(CurrencyUnit::Full)),
             "SEK" => Ok(Self::SEK(CurrencyUnit::Full)),
             _ => Err(UnitError::InvalidCurrencyUnit),
         }
@@ -42,6 +44,7 @@ impl Currency {
             Self::EUR(_) => Self::EUR(CurrencyUnit::Fraction),
             Self::DKK(_) => Self::DKK(CurrencyUnit::Fraction),
             Self::NOK(_) => Self::NOK(CurrencyUnit::Fraction),
+            Self::PLN(_) => Self::PLN(CurrencyUnit::Fraction),
             Self::SEK(_) => Self::SEK(CurrencyUnit::Fraction),
         };
     }
@@ -51,6 +54,7 @@ impl Currency {
             Self::EUR(_) => Self::EUR(CurrencyUnit::Full),
             Self::DKK(_) => Self::DKK(CurrencyUnit::Full),
             Self::NOK(_) => Self::NOK(CurrencyUnit::Full),
+            Self::PLN(_) => Self::PLN(CurrencyUnit::Full),
             Self::SEK(_) => Self::SEK(CurrencyUnit::Full),
         };
     }
@@ -60,6 +64,7 @@ impl Currency {
             Self::EUR(c_unit) => matches!(c_unit, CurrencyUnit::Fraction),
             Self::DKK(c_unit) => matches!(c_unit, CurrencyUnit::Fraction),
             Self::NOK(c_unit) => matches!(c_unit, CurrencyUnit::Fraction),
+            Self::PLN(c_unit) => matches!(c_unit, CurrencyUnit::Fraction),
             Self::SEK(c_unit) => matches!(c_unit, CurrencyUnit::Fraction),
         }
     }
@@ -69,6 +74,7 @@ impl Currency {
             Self::EUR(c_unit) => matches!(c_unit, CurrencyUnit::Full),
             Self::DKK(c_unit) => matches!(c_unit, CurrencyUnit::Full),
             Self::NOK(c_unit) => matches!(c_unit, CurrencyUnit::Full),
+            Self::PLN(c_unit) => matches!(c_unit, CurrencyUnit::Full),
             Self::SEK(c_unit) => matches!(c_unit, CurrencyUnit::Full),
         }
     }
@@ -78,6 +84,7 @@ impl Currency {
             Self::EUR(_) => "EUR",
             Self::DKK(_) => "DKK",
             Self::NOK(_) => "NOK",
+            Self::PLN(_) => "PLN",
             Self::SEK(_) => "SEK",
         }
     }
@@ -92,6 +99,9 @@ impl Currency {
 
             Self::NOK(CurrencyUnit::Full) => "Kr.",
             Self::NOK(CurrencyUnit::Fraction) => "Øre",
+
+            Self::PLN(CurrencyUnit::Full) => "zł.",
+            Self::PLN(CurrencyUnit::Fraction) => "grosz",
 
             Self::SEK(CurrencyUnit::Full) => "Kr.",
             Self::SEK(CurrencyUnit::Fraction) => "Öre",
