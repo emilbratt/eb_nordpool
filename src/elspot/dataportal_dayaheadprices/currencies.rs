@@ -8,6 +8,7 @@ pub enum Currency {
     DKK,
     NOK,
     PLN,
+    RON,
     SEK,
 }
 
@@ -17,11 +18,12 @@ impl fmt::Display for Currency {
     }
 }
 
-pub const SUPPORTED_CURRENCIES: [&str; 5] = [
+pub const SUPPORTED_CURRENCIES: [&str; 6] = [
     "EUR",
     "DKK",
     "NOK",
     "PLN",
+    "RON",
     "SEK",
 ];
 

@@ -9,13 +9,13 @@ use eb_nordpool::{
 // #[test]
 #[allow(unused)] // Uncomment the test attribute (line above) to include this test.
 fn from_nordpool() {
-    let date = Local::now().format("2024-11-07").to_string();
-    let currency = "NOK";
+    let date = Local::now().format("2024-12-20").to_string();
+    let currency = "RON";
     let mut regions: Vec<&str> = vec![];
     for region in dataportal_dayaheadprices::regions::SUPPORTED_REGIONS.iter() {
         regions.push(region);
     }
-    // let regions: Vec<&str> = vec!["NO3"];
+    let regions: Vec<&str> = vec!["TEL"]; // UN-COMMENT TO OVERRIDE AND USE REGION.
 
     let data = elspot::from_nordpool(currency, &date, regions).unwrap();
     let mut regions = data.extract_prices_all_regions();
