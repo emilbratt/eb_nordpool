@@ -206,7 +206,7 @@ pub fn from_url(url: &str) -> ElspotResult<Box<dyn PriceExtractor>> {
     from_json(&json_str)
 }
 
-pub fn from_nordpool(currency: &str, date: &str, regions: Vec<&str>) -> ElspotResult<Box<dyn PriceExtractor>> {
+pub fn from_nordpool(currency: &str, date: &str, regions: &[&str]) -> ElspotResult<Box<dyn PriceExtractor>> {
     if regions.is_empty() {
         return Err(ElspotError::DataPortalDayaheadPricesNoRegionsSupplied);
     }

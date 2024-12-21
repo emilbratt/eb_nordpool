@@ -41,7 +41,7 @@ impl <'a>QueryOptions<'a> {
         self.date = Some(date);
     }
 
-    pub fn set_regions(&mut self, regions: Vec<&'a str>) {
+    pub fn set_regions(&mut self, regions: &[&'a str]) {
         for region in regions.iter() {
             if !SUPPORTED_REGIONS.contains(&region) {
                 let supported = SUPPORTED_REGIONS

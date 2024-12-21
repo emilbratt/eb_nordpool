@@ -17,7 +17,7 @@ fn from_nordpool() {
     }
     let regions: Vec<&str> = vec!["TEL"]; // UN-COMMENT TO OVERRIDE AND USE REGION.
 
-    let data = elspot::from_nordpool(currency, &date, regions).unwrap();
+    let data = elspot::from_nordpool(currency, &date, &regions).unwrap();
     let mut regions = data.extract_prices_all_regions();
 
     println!("Date: {}\n", data.date());
