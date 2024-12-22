@@ -186,7 +186,7 @@ pub fn from_json(json_str: &str) -> ElspotResult<Box<dyn PriceExtractor>> {
                 let msg = format!("{}", e);
                 Debug::new(file, &msg).print();
             }
-        },
+        }
     }
 
     Err(ElspotError::InvalidInputData)
