@@ -52,7 +52,7 @@
 //! Once you have loaded the data with one of the two workflows above, we can do stuff.
 //! ```
 //! // Get all prices for specific region (always in time ascending order starting at 00:00).
-//! let prices = data.extract_prices_for_region("Oslo");
+//! let prices = data.extract_prices_for_region("NO1");
 //! // ..returns a Vec<elspot::Price>
 //!
 //! // Get price as &str.
@@ -83,7 +83,7 @@
 //! let (from_la_time, to_la_time) = p.from_to_with_tz(Los_Angeles);
 //!
 //! // Convert to other units (includes changing price value to accommodate for new units).
-//! let mut prices = data.extract_prices_for_region("Oslo");
+//! let mut prices = data.extract_prices_for_region("NO1");
 //! for mut p in prices.iter_mut() {
 //!     // To fractional currency unit (from for example 'Kr.' to 'Øre').
 //!     units::convert_to_currency_fraction(&mut p);
@@ -118,7 +118,7 @@
 //! let regions = data.regions();
 //!
 //! // Check if region exists in dataset.
-//! if data.has_region("Oslo") {
+//! if data.has_region("NO1") {
 //!     // ..do something
 //! }
 //!
