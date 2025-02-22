@@ -1,6 +1,6 @@
 [package]
 name = "eb_nordpool"
-version = "0.2.3"
+version = "0.2.4"
 edition = "2021"
 
 description = "Extract elspot prices from nordpool"
