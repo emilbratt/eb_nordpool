@@ -1,11 +1,10 @@
-use std::{env, fmt, fs};
+use std::{fmt, fs};
 
 use chrono::{DateTime, Utc, NaiveDate};
 use chrono_tz::Tz;
 
 use reqwest;
 
-use crate::debug::Debug;
 use crate::error::{
     ElspotError,
     ElspotResult,
@@ -162,33 +161,16 @@ pub trait PriceExtractor {
 }
 
 pub fn from_json(json_str: &str) -> ElspotResult<Box<dyn PriceExtractor>> {
-    let debug_enabled = env::var("EB_NORDPOOL_DEBUG").is_ok();
-    let file = "elspot.rs";
-
-    let data = dataportal_dayaheadprices::PriceData::new(json_str);
-    match data {
-        Ok(data) => {
-            return Ok(Box::new(data))
-        }
-        Err(e) => {
-            if debug_enabled {
-                let msg = format!("{}", e);
-                Debug::new(file, &msg).print();
-            }
-        }
+    if let Ok(data) = dataportal_dayaheadprices::PriceData::new(json_str) {
+        return Ok(Box::new(data))
     }
 
-    let data = marketdata_page_10::PriceData::new(json_str);
-    match data {
-        Ok(data) => return Ok(Box::new(data)),
-        Err(e) => {
-            if debug_enabled {
-                let msg = format!("{}", e);
-                Debug::new(file, &msg).print();
-            }
-        }
+    if let Ok(data) = marketdata_page_10::PriceData::new(json_str) {
+        return Ok(Box::new(data))
     }
 
+    eprintln!("Could not extract price data from input, is it valid?");
+    eprintln!("Dumping input data:\n{json_str}");
     Err(ElspotError::InvalidInputData)
 }
 
@@ -200,7 +182,6 @@ pub fn from_file(path: &str) -> ElspotResult<Box<dyn PriceExtractor>> {
             Err(ElspotError::IOError)
         }
     }
-
 }
 
 pub fn from_url(url: &str) -> ElspotResult<Box<dyn PriceExtractor>> {

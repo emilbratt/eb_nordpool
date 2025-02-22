@@ -1,4 +1,4 @@
-use std::{env, fs, fmt};
+use std::{fs, fmt};
 
 use chrono::{
     DateTime,
@@ -11,7 +11,6 @@ use chrono_tz::Tz;
 use serde::{Deserialize, Serialize};
 use serde_json;
 
-use crate::debug::Debug;
 use crate::error::{
     ElspotError,
     ElspotResult,
@@ -88,12 +87,9 @@ impl PriceExtractor for PriceData {
 
                 Ok(data)
             }
-            Err(e) => {
-                if env::var("EB_NORDPOOL_DEBUG").is_ok() {
-                    let file = "elspot/marketdata_page_10.rs";
-                    let msg = format!("serde_json: {}", e);
-                    Debug::new(file, &msg).print();
-                }
+            Err(_e) => {
+                // FIXME: show this error if user wants to..
+                // eprintln!("{_e}");
                 Err(ElspotError::MarketdataPage10InvalidJson)
             }
         }

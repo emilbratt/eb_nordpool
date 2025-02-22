@@ -9,8 +9,3 @@ Test script that uses the cargo-watch command.
 ```sh
 ./run.sh
 ```
-
-Run this command to print out additional debug info.
-```
-EB_NORDPOOL_DEBUG=1 ./run.sh
-```

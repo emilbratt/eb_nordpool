@@ -139,4 +139,3 @@ pub mod elspot;
 pub mod error;
 pub mod region_time;
 pub mod units;
-pub mod debug;

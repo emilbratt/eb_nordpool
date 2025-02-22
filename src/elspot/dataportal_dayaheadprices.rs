@@ -1,4 +1,4 @@
-use std::{env, fs, fmt};
+use std::{fs, fmt};
 use std::collections::HashMap;
 
 use chrono::{
@@ -10,7 +10,6 @@ use chrono::{
 use serde::{Deserialize, Serialize};
 use serde_json;
 
-use crate::debug::Debug;
 use crate::error::{
     ElspotError,
     ElspotResult,
@@ -83,6 +82,7 @@ impl PriceExtractor for PriceData {
     fn new(json_str: &str) -> ElspotResult<Self> {
         match serde_json::from_str::<Self>(json_str) {
             Ok(data) => {
+                // FIXME:: do we need these code blocks below?
                 // if data.version < 1 || data.version > 3 {
                 //     return Err(ElspotError::DataPortalDayaheadPricesInvalidVersion);
                 // }
@@ -93,12 +93,9 @@ impl PriceExtractor for PriceData {
 
                 Ok(data)
             }
-            Err(e) => {
-                if env::var("EB_NORDPOOL_DEBUG").is_ok() {
-                    let file = "elspot/dataportal_dayaheadprices.rs";
-                    let msg = format!("serde_json: {}", e);
-                    Debug::new(file, &msg).print();
-                }
+            Err(_e) => {
+                // FIXME: show this error if user wants to..
+                // eprintln!("{_e}");
                 Err(ElspotError::DataPortalDayaheadPricesInvalidJson)
             }
         }
