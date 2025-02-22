@@ -24,6 +24,8 @@ use super::{PriceExtractor, Price};
 mod hour_count;
 mod unit_string;
 
+use hour_count::HoursForDate;
+
 pub fn from_url(url: &str) -> ElspotResult<PriceData> {
     let r = reqwest::blocking::get(url).unwrap();
 
@@ -97,7 +99,6 @@ impl PriceExtractor for PriceData {
         }
     }
 
-
     /// Check if prices are final.
     fn is_final(&self) -> bool {
         !self.data.ContainsPreliminaryValues
@@ -145,32 +146,35 @@ impl PriceExtractor for PriceData {
     }
 
     fn extract_prices_for_region(&self, region: &str) -> Vec<Price> {
-        let res: Option<&ColEntry> = self.data.Rows[0].Columns
-            .iter()
-            .find(|v| v.Name == region);
-
-        let index_for_region: usize = match res {
-            Some(v) => v.Index.into(),
-            None => panic!(),
+        // Verify that the amount of prices extracted matches the amount of hours in that particular day.
+        let index: usize = match self.data.Rows[0].Columns.iter().find(|col| col.Name == region) {
+            None => {
+                eprintln!("Prices for {region} not found.");
+                return vec![];
+            }
+            Some(entry) => entry.Index.into(),
         };
-
-        // Extract all price values into a simple vector, exluding non-price values.
-        let _prices: Vec<&ColEntry> = self.data.Rows
+        let raw_prices: Vec<&ColEntry> = self.data.Rows
             .iter()
-            .filter(|&row| !&row.IsExtraRow && &row.Columns[index_for_region].Value != "-")
-            .map(|row| &row.Columns[index_for_region])
+            .filter(|row| !row.IsExtraRow && row.Columns[index].Value != "-")
+            .map(|row| &row.Columns[index])
             .collect();
-
-
-        let hour_count = hour_count::Hours::new(self.date(), region);
-
-        // Verify that the amount of prices extracted matches the hours in a day.
-        match _prices.len() {
-            0 => return vec![], // no prices where found, that is ok.
-            23 => assert!(matches!(hour_count, hour_count::Hours::TwentyThree)),
-            25 => assert!(matches!(hour_count, hour_count::Hours::TwentyFive)),
-            24 => assert!(matches!(hour_count, hour_count::Hours::TwentyFour)),
-            n => panic!("Weird price count: {}", n),
+        if raw_prices.is_empty() {
+            // no prices where found, that is ok..
+            return vec![];
+        }
+        let hours_for_date = HoursForDate::new(self.date(), region);
+        let verified = match raw_prices.len() {
+            23 => matches!(hours_for_date, HoursForDate::TwentyThree),
+            25 => matches!(hours_for_date, HoursForDate::TwentyFive),
+            24 => matches!(hours_for_date, HoursForDate::TwentyFour),
+            _ => false,
+        };
+        if !verified {
+            eprintln!("FATAL: Non matching price count for {region}.");
+            eprintln!("Got '{}' prices, expected 23, 24 or 25", raw_prices.len());
+            eprintln!("Dumping data: 'raw_prices'\n{:?}", raw_prices);
+            panic!();
         }
 
         // Now we can start assembling the real price data.
@@ -180,14 +184,15 @@ impl PriceExtractor for PriceData {
         let pwr_unit = unit_string::extract_power_unit(&self.data.Units[0]);
         let e_pwr_unit = units::Power::new(pwr_unit).unwrap_or_else(|e| panic!("{}", e));
 
-        let mtu = units::Mtu::Sixty; // Is always 60 minutes for this nordpool api.
+        // Always 60 minutes for this old nordpool api.
+        let mtu = units::Mtu::Sixty;
 
         let mut start_time: DateTime<Tz> = dt_tz_from_naive_dt(self.data.Rows[0].StartTime, region);
         let mut end_time: DateTime<Tz> = dt_tz_from_naive_dt(self.data.Rows[0].EndTime, region);
 
-        let mut prices: Vec<Price> = Vec::with_capacity(_prices.len());
+        let mut extr_prices: Vec<Price> = Vec::with_capacity(raw_prices.len());
 
-        for price in _prices {
+        for price in raw_prices {
             if region != "SYS" {
                 assert_eq!(self.date(), start_time.date_naive());
             }
@@ -203,13 +208,13 @@ impl PriceExtractor for PriceData {
                 power_unit: e_pwr_unit.clone(),
             };
 
-            prices.push(p);
+            extr_prices.push(p);
 
             start_time += Duration::hours(1);
             end_time += Duration::hours(1);
         }
 
-        prices
+        extr_prices
     }
 
     fn extract_prices_all_regions(&self) -> Vec<Vec<Price>> {

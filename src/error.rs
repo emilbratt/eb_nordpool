@@ -5,6 +5,9 @@ pub type ElspotResult<T> = Result<T, ElspotError>;
 
 #[derive(Debug)]
 pub enum ElspotError {
+    HttpRequestFailed,
+    InvalidHttpResponse,
+    IOError,
     InvalidInputData,
 
     DataPortalDayaheadPricesInvalidJson,

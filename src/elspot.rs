@@ -35,6 +35,7 @@ impl fmt::Display for Price {
     }
 }
 
+// FIXME: Add Result types and remove panics.
 impl Price {
     fn formatted_decimal(&self) -> String {
         // Since we are working with money, we want to round to 2 decimals.
@@ -43,7 +44,7 @@ impl Price {
         // might in rare cases be rounded the wrong way due to floating point precision errors.
         // The rounding error is marginal and I consider this an OK trade off for not using fixed point calculation.
 
-        // Test number before starting.
+        // Validates that the number is parsable before starting, otherwise do not continue..
         self.value.parse::<f64>().unwrap_or_else(|e| panic!("{}: '{}' could not be parsad into float", e, self.value));
 
         let mut split = self.value.split('.');
@@ -129,7 +130,6 @@ impl Price {
     }
 }
 
-
 pub trait PriceExtractor {
     fn new(json_str: &str) -> ElspotResult<Self> where Self: Sized;
 
@@ -193,23 +193,30 @@ pub fn from_json(json_str: &str) -> ElspotResult<Box<dyn PriceExtractor>> {
 }
 
 pub fn from_file(path: &str) -> ElspotResult<Box<dyn PriceExtractor>> {
-    let json_str = fs::read_to_string(path).unwrap();
+    match fs::read_to_string(path) {
+        Ok(s) => from_json(&s),
+        Err(e) => {
+            eprintln!("{e}");
+            Err(ElspotError::IOError)
+        }
+    }
 
-    from_json(&json_str)
 }
 
 pub fn from_url(url: &str) -> ElspotResult<Box<dyn PriceExtractor>> {
-    let r = reqwest::blocking::get(url)
-        .unwrap_or_else(|e| panic!("{}: could not load url '{}", e, url))
-        .error_for_status();
-
-    match r {
+    match reqwest::blocking::get(url) {
         Ok(r) => {
-            let json_str = r.text().unwrap();
-            from_json(&json_str)
+            match r.text() {
+                Ok(s) => from_json(&s),
+                Err(e) => {
+                    eprintln!("{e}");
+                    Err(ElspotError::InvalidHttpResponse)
+                }
+            }
         }
-        Err(err) => {
-            panic!("{}", err);
+        Err(e) => {
+            eprintln!("{e}");
+            Err(ElspotError::HttpRequestFailed)
         }
     }
 }

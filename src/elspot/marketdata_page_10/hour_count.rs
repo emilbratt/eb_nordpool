@@ -12,13 +12,13 @@ const NORDPOOL_DEFAULT_TZ_REGION: &str = "Oslo";
 /// Due to weird structure of the dataset, it is not given how many hours we have..
 /// E.g., there are no clear indicators in the dataset to go after.
 /// We use region and some time calculations to determine this.
-pub enum Hours {
+pub enum HoursForDate {
     TwentyThree,
     TwentyFour,
     TwentyFive,
 }
 
-impl Hours {
+impl HoursForDate {
     pub fn new(d: NaiveDate, region: &str) -> Self {
         let region = if region == "SYS" {
             NORDPOOL_DEFAULT_TZ_REGION
