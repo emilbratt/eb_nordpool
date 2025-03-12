@@ -20,6 +20,9 @@ use chrono_tz::{
         Luxembourg,
         Paris,
         Amsterdam,
+        Bucharest,
+        Berlin,
+        Warsaw,
     }
 };
 
@@ -44,6 +47,11 @@ pub fn tz_from_region(region: &str) -> RegionResult<Tz> {
         "DE-LU" => Ok(Luxembourg),
         "FR" => Ok(Paris),
         "NL" => Ok(Amsterdam),
+        "GER" => Ok(Berlin),
+        "PL" => Ok(Warsaw),
+
+        // Romania
+        "TEL" => Ok(Bucharest),
 
         // System
         "SYS" => Ok(UTC),
@@ -54,13 +62,13 @@ pub fn tz_from_region(region: &str) -> RegionResult<Tz> {
 pub fn dt_region_from_utc_dt(utc_dt: &DateTime<Utc>, region: &str) -> DateTime<Tz> {
     match tz_from_region(region) {
         Ok(tz) => utc_dt.with_timezone(&tz),
-        Err(e) => panic!("{:?}", e),
+        Err(e) => panic!("{e} Could not get DateTime from {region}"),
     }
 }
 
 pub fn dt_tz_from_naive_dt(naive: NaiveDateTime, region: &str) -> DateTime<Tz> {
     match tz_from_region(region) {
         Ok(tz) => naive.and_local_timezone(tz).unwrap(),
-        Err(e) => panic!("{:?}", e),
+        Err(e) => panic!("{e} Could not get DateTime from {region}"),
     }
 }

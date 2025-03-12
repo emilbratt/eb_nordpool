@@ -9,13 +9,18 @@ use eb_nordpool::{
 // #[test]
 #[allow(unused)] // Uncomment the test attribute (line above) to include this test.
 fn from_nordpool() {
-    let date = Local::now().format("2024-12-20").to_string();
-    let currency = "RON";
-    let mut regions: Vec<&str> = vec![];
+    let date = Local::now().format("%Y-%m-%d").to_string();
+
+    // Test for all regions with "EUR" as currency
+    let currency = "EUR";
+    let mut regions: Vec<&str> = Vec::with_capacity(dataportal_dayaheadprices::regions::SUPPORTED_REGIONS.len());
     for region in dataportal_dayaheadprices::regions::SUPPORTED_REGIONS.iter() {
         regions.push(region);
     }
-    let regions: Vec<&str> = vec!["TEL"]; // UN-COMMENT TO OVERRIDE AND USE REGION.
+
+    // // Test for Romania
+    // let currency = "RON";
+    // let regions: Vec<&str> = vec!["TEL"]; // UN-COMMENT TO OVERRIDE AND USE REGION.
 
     let data = elspot::from_nordpool(currency, &date, &regions).unwrap();
     let mut regions = data.extract_prices_all_regions();
@@ -23,6 +28,8 @@ fn from_nordpool() {
     println!("Date: {}\n", data.date());
     for prices in regions.iter_mut() {
         for mut p in prices.iter_mut() {
+            let (from, to) = p.from_to();
+            println!("{from}");
             println!("{}: {} | float: {}", p.region, p.price_label(), p.as_f32());
             units::convert_to_kwh(&mut p);
             units::convert_to_currency_fraction(&mut p);
