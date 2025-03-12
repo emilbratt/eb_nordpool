@@ -169,7 +169,7 @@ dependencies = [
 
 [[package]]
 name = "eb_nordpool"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "chrono",
  "chrono-tz",
