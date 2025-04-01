@@ -133,7 +133,7 @@ impl PriceExtractor for PriceData {
 
     }
 
-    /// Returns a Vec<&str> of all available `regions` in the price dataset.
+    /// Returns a vector of all available `regions` in the price dataset.
     fn regions(&self) -> Vec<&str> {
         self.multi_area_entries[0].entry_per_area
             .iter()

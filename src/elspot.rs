@@ -141,22 +141,28 @@ pub trait PriceExtractor {
     /// Prints all available `regions` in the price dataset.
     fn print_regions(&self);
 
-    /// Returns a Vec<&str> of all available `regions` in the price dataset.
+    /// Returns a vector of all available `regions` in the price dataset.
     fn regions(&self) -> Vec<&str>;
 
     /// Check if region exist in dataset.
     fn has_region(&self, region: &str) -> bool;
 
+    /// Returns selected currency.
     fn currency(&self) -> String;
 
+    /// Returns the date for price data.
     fn date(&self) -> NaiveDate;
 
+    /// Returns a vector of all prices for selected region.
     fn extract_prices_for_region(&self, region: &str) -> Vec<Price>;
 
+    /// Returns a vector of a vector of all prices for all regions.
     fn extract_prices_all_regions(&self) -> Vec<Vec<Price>>;
 
+    /// Returns a json string of all data.
     fn to_json_string(&self) -> String;
 
+    /// Writes the data to file (as json).
     fn to_file(&self, path: &str);
 }
 
