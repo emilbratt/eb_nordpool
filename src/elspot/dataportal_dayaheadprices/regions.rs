@@ -44,7 +44,7 @@ impl fmt::Display for Region {
     }
 }
 
-pub const SUPPORTED_REGIONS: [&str; 22] = [
+pub const SUPPORTED_REGIONS: [&str; 23] = [
     // Baltic
     "EE",
     "LT",
@@ -73,7 +73,7 @@ pub const SUPPORTED_REGIONS: [&str; 22] = [
     "SE4",
 
     // Romania
-    // "TEL",
+    "TEL",
 
     // System
     "SYS",
