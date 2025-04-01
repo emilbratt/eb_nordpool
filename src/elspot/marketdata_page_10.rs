@@ -95,17 +95,14 @@ impl PriceExtractor for PriceData {
         }
     }
 
-    /// Check if prices are final.
     fn is_final(&self) -> bool {
         !self.data.ContainsPreliminaryValues
     }
 
-    /// Check if prices are not finite.
     fn is_preliminary(&self) -> bool {
         self.data.ContainsPreliminaryValues
     }
 
-    /// Prints all available `regions` in the price dataset.
     fn print_regions(&self) {
         println!("Available regions:");
         for col in &self.data.Rows[0].Columns {
@@ -114,7 +111,6 @@ impl PriceExtractor for PriceData {
         println!();
     }
 
-    /// Returns a vector of all available `regions` in the price dataset.
     fn regions(&self) -> Vec<&str> {
         self.data.Rows[0].Columns
             .iter()
@@ -122,7 +118,6 @@ impl PriceExtractor for PriceData {
             .collect()
     }
 
-    /// Check if region exist in dataset.
     fn has_region(&self, region: &str) -> bool {
         let columns = &self.data.Rows[0].Columns;
 

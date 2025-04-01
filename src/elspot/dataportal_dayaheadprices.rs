@@ -101,7 +101,6 @@ impl PriceExtractor for PriceData {
         }
     }
 
-    /// Check if prices are final.
     fn is_final(&self) -> bool {
         for states in self.area_states.iter() {
             if !states.state.is_final() {
@@ -112,7 +111,6 @@ impl PriceExtractor for PriceData {
         true
     }
 
-    /// Prices are either final or preliminary.
     fn is_preliminary(&self) -> bool {
         for states in self.area_states.iter() {
             if states.state.is_preliminary() {
@@ -123,7 +121,6 @@ impl PriceExtractor for PriceData {
         false
     }
 
-    /// Prints all available `regions` in the price dataset.
     fn print_regions(&self) {
         println!("Available regions:");
         for r in self.multi_area_entries[0].entry_per_area.iter() {
@@ -133,7 +130,6 @@ impl PriceExtractor for PriceData {
 
     }
 
-    /// Returns a vector of all available `regions` in the price dataset.
     fn regions(&self) -> Vec<&str> {
         self.multi_area_entries[0].entry_per_area
             .iter()
@@ -141,7 +137,6 @@ impl PriceExtractor for PriceData {
             .collect()
     }
 
-    /// Check if region exist in dataset.
     fn has_region(&self, region: &str) -> bool {
         for r in self.multi_area_entries.iter() {
             if !r.entry_per_area.contains_key(region) {
