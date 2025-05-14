@@ -6,7 +6,7 @@ use eb_nordpool::{
     units,
 };
 
-#[test]
+#[test] #[ignore]
 fn from_nordpool() {
     let date = Local::now().format("%Y-%m-%d").to_string();
     println!("TEST DONWLOAD");
