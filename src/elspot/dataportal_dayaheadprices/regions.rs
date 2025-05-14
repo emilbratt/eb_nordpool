@@ -31,7 +31,8 @@ pub enum Region {
     SE3,
     SE4,
 
-    // Romania
+    // South East Europe (SEE)
+    BG,
     TEL,
 
     // System
@@ -44,7 +45,7 @@ impl fmt::Display for Region {
     }
 }
 
-pub const SUPPORTED_REGIONS: [&str; 23] = [
+pub const SUPPORTED_REGIONS: [&str; 24] = [
     // Baltic
     "EE",
     "LT",
@@ -72,7 +73,8 @@ pub const SUPPORTED_REGIONS: [&str; 23] = [
     "SE3",
     "SE4",
 
-    // Romania
+    // South East Europe (SEE)
+    "BG",
     "TEL",
 
     // System

@@ -25,6 +25,7 @@ pub enum Currency {
     PLN(CurrencyUnit),
     RON(CurrencyUnit),
     SEK(CurrencyUnit),
+    BGN(CurrencyUnit),
 }
 
 impl Currency {
@@ -37,6 +38,7 @@ impl Currency {
             "PLN" => Ok(Self::PLN(CurrencyUnit::Full)),
             "RON" => Ok(Self::RON(CurrencyUnit::Full)),
             "SEK" => Ok(Self::SEK(CurrencyUnit::Full)),
+            "BGN" => Ok(Self::BGN(CurrencyUnit::Full)),
             _ => Err(UnitError::InvalidCurrencyUnit),
         }
     }
@@ -49,6 +51,7 @@ impl Currency {
             Self::PLN(_) => Self::PLN(CurrencyUnit::Fraction),
             Self::RON(_) => Self::RON(CurrencyUnit::Fraction),
             Self::SEK(_) => Self::SEK(CurrencyUnit::Fraction),
+            Self::BGN(_) => Self::BGN(CurrencyUnit::Fraction),
         };
     }
 
@@ -60,6 +63,7 @@ impl Currency {
             Self::PLN(_) => Self::PLN(CurrencyUnit::Full),
             Self::RON(_) => Self::RON(CurrencyUnit::Full),
             Self::SEK(_) => Self::SEK(CurrencyUnit::Full),
+            Self::BGN(_) => Self::BGN(CurrencyUnit::Full),
         };
     }
 
@@ -71,6 +75,7 @@ impl Currency {
             Self::PLN(c_unit) => matches!(c_unit, CurrencyUnit::Fraction),
             Self::RON(c_unit) => matches!(c_unit, CurrencyUnit::Fraction),
             Self::SEK(c_unit) => matches!(c_unit, CurrencyUnit::Fraction),
+            Self::BGN(c_unit) => matches!(c_unit, CurrencyUnit::Fraction),
         }
     }
 
@@ -82,6 +87,7 @@ impl Currency {
             Self::PLN(c_unit) => matches!(c_unit, CurrencyUnit::Full),
             Self::RON(c_unit) => matches!(c_unit, CurrencyUnit::Full),
             Self::SEK(c_unit) => matches!(c_unit, CurrencyUnit::Full),
+            Self::BGN(c_unit) => matches!(c_unit, CurrencyUnit::Full),
         }
     }
 
@@ -93,6 +99,7 @@ impl Currency {
             Self::PLN(_) => "PLN",
             Self::RON(_) => "RON",
             Self::SEK(_) => "SEK",
+            Self::BGN(_) => "BGN",
         }
     }
 
@@ -115,6 +122,9 @@ impl Currency {
 
             Self::SEK(CurrencyUnit::Full) => "Kr.",
             Self::SEK(CurrencyUnit::Fraction) => "Öre",
+
+            Self::BGN(CurrencyUnit::Full) => "lev.",
+            Self::BGN(CurrencyUnit::Fraction) => "stotinka",
         }
     }
 }

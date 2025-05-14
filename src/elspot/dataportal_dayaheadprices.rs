@@ -95,7 +95,7 @@ impl PriceExtractor for PriceData {
             }
             Err(_e) => {
                 // FIXME: show this error if user wants to..
-                // eprintln!("{_e}");
+                eprintln!("{_e}");
                 Err(ElspotError::DataPortalDayaheadPricesInvalidJson)
             }
         }

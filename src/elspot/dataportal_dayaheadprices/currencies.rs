@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Currency {
+    BGN,
     EUR,
     DKK,
     NOK,
@@ -18,7 +19,8 @@ impl fmt::Display for Currency {
     }
 }
 
-pub const SUPPORTED_CURRENCIES: [&str; 6] = [
+pub const SUPPORTED_CURRENCIES: [&str; 7] = [
+    "BGN",
     "EUR",
     "DKK",
     "NOK",

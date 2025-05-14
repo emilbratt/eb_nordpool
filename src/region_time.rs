@@ -23,6 +23,7 @@ use chrono_tz::{
         Bucharest,
         Berlin,
         Warsaw,
+        Sofia,
     }
 };
 
@@ -50,8 +51,9 @@ pub fn tz_from_region(region: &str) -> RegionResult<Tz> {
         "GER" => Ok(Berlin),
         "PL" => Ok(Warsaw),
 
-        // Romania
+        // South East Europe (SEE)
         "TEL" => Ok(Bucharest),
+        "BG" => Ok(Sofia),
 
         // System
         "SYS" => Ok(UTC),
