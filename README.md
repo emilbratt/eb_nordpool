@@ -62,7 +62,6 @@ For all but the "ignored" ones found in download.rs.
 
 ```sh
 cargo test
-
 ```
 
 For ignored ones in download.rs (uses no capture because we need to read output data).

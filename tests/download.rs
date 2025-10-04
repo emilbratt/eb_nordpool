@@ -13,10 +13,7 @@ fn from_nordpool() {
 
     // Test for all regions with "EUR" as currency
     let currency = "EUR";
-    let mut regions: Vec<&str> = Vec::with_capacity(dataportal_dayaheadprices::regions::SUPPORTED_REGIONS.len());
-    for region in dataportal_dayaheadprices::regions::SUPPORTED_REGIONS.iter() {
-        regions.push(region);
-    }
+    let regions = dataportal_dayaheadprices::regions::SUPPORTED_REGIONS;
 
     // // Test for Romania
     // let currency = "RON";
